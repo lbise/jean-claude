@@ -11,15 +11,13 @@ from jean_claude.auth.openai_codex_oauth import refresh_openai_codex_token
 from jean_claude.auth.store import AuthStore, OpenAICodexCredentials
 from jean_claude.errors import AuthError, AuthExpiredError, LLMError, RetryableLLMError
 from jean_claude.llm.base import LLMResult
+from jean_claude.prompts import CORE_SYSTEM_PROMPT
 
 
 DEFAULT_MODEL = "gpt-5.3-codex"
 DEFAULT_BASE_URL = "https://chatgpt.com/backend-api"
 DEFAULT_TIMEOUT_SECONDS = 90.0
-DEFAULT_INSTRUCTIONS = (
-    "You are Jean-Claude, a media recommendation assistant. "
-    "Provide concise, practical answers."
-)
+DEFAULT_INSTRUCTIONS = CORE_SYSTEM_PROMPT
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 USAGE_LIMIT_CODE_PATTERN = re.compile(r"usage_limit_reached|usage_not_included|rate_limit_exceeded", re.I)

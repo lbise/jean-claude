@@ -25,6 +25,13 @@ class CLITestCase(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn('"provider": "mock"', output.getvalue())
 
+    def test_cli_prefs_show_json(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["prefs", "show", "--json"])
+        self.assertEqual(exit_code, 0)
+        self.assertIn('"genres_like"', output.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
