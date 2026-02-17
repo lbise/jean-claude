@@ -1,0 +1,83 @@
+Metadata-Version: 2.4
+Name: jean-claude
+Version: 0.1.0
+Summary: CLI foundation for the Jean-Claude media agent
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+
+# Jean-Claude (CLI MVP)
+
+This repository currently contains a minimal CLI implementation for Jean-Claude
+with:
+
+- ChatGPT OAuth login for OpenAI Codex subscription access
+- OpenAI Codex inference test command
+- Mock LLM provider for offline development
+
+## Quickstart
+
+1. Create a virtual environment and install:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+2. Log in with ChatGPT OAuth (Codex subscription):
+
+```bash
+jc auth login openai-codex
+```
+
+3. Run an LLM connectivity test:
+
+```bash
+jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Recommend one sci-fi movie and explain why."
+```
+
+4. Run with the local mock provider (no network):
+
+```bash
+jc llm test --provider mock --prompt "Find a thriller series"
+```
+
+## Commands
+
+### Auth
+
+```bash
+jc auth login openai-codex
+jc auth status openai-codex
+jc auth logout openai-codex
+```
+
+### LLM
+
+```bash
+jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "..."
+jc llm test --provider mock --prompt "..."
+```
+
+### JSON output
+
+```bash
+jc llm test --provider mock --prompt "..." --json
+```
+
+## Storage
+
+Credentials are stored at:
+
+- `~/.jean-claude/auth.json`
+
+You can override this directory with:
+
+- `JEAN_CLAUDE_STATE_DIR`
+
+## Notes
+
+- The OpenAI Codex flow here uses ChatGPT OAuth tokens and Codex backend
+  endpoints intended for Codex subscription usage.
+- This should be treated as an integration path for testing and experimentation
+  while the project remains in MVP mode.
