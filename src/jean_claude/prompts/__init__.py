@@ -1,27 +1,28 @@
-"""Prompt packs for Jean-Claude."""
+"""Prompt-pack loading from editable filesystem files."""
 
-from .v1 import (
-    CORE_SYSTEM_PROMPT,
-    EXTRACTION_OUTPUT_SCHEMA,
-    INTERVIEW_SYSTEM_PROMPT,
-    RECOMMENDATION_OUTPUT_SCHEMA,
-    RECOMMENDER_SYSTEM_PROMPT,
-    USER_PREFERENCE_SCHEMA,
-    build_extraction_system_prompt,
-    build_extraction_user_prompt,
-    build_recommender_system_prompt,
-    build_recommender_user_prompt,
+from .repository import (
+    FlowDefinition,
+    FlowState,
+    FlowTransition,
+    PromptPackRepository,
+    SkillDefinition,
 )
 
+
+def default_base_instructions(repository: PromptPackRepository | None = None) -> str:
+    repo = repository or PromptPackRepository()
+    parts = [
+        repo.read_text("base/jeanclaude.md"),
+        repo.read_text("base/policies.md"),
+    ]
+    return "\n\n".join(part for part in parts if part)
+
+
 __all__ = [
-    "CORE_SYSTEM_PROMPT",
-    "EXTRACTION_OUTPUT_SCHEMA",
-    "INTERVIEW_SYSTEM_PROMPT",
-    "RECOMMENDATION_OUTPUT_SCHEMA",
-    "RECOMMENDER_SYSTEM_PROMPT",
-    "USER_PREFERENCE_SCHEMA",
-    "build_extraction_system_prompt",
-    "build_extraction_user_prompt",
-    "build_recommender_system_prompt",
-    "build_recommender_user_prompt",
+    "FlowDefinition",
+    "FlowState",
+    "FlowTransition",
+    "PromptPackRepository",
+    "SkillDefinition",
+    "default_base_instructions",
 ]

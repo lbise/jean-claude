@@ -1,59 +1,49 @@
-# Jean-Claude Prompt Pack (v1)
+# Jean-Claude Prompt System (v1)
 
-This document describes the first prompt pack used to drive Jean-Claude behavior.
+The prompt system is now file-driven and outside application code.
 
-Source of truth:
+## Prompt Pack Layout
 
-- `src/jean_claude/prompts/v1.py`
+- `prompts/base/jeanclaude.md`
+- `prompts/base/policies.md`
+- `prompts/modes/onboarding.md`
+- `prompts/modes/chat.md`
+- `prompts/skills/catalog.yaml`
+- `prompts/flows/onboarding.yaml`
+- `prompts/flows/chat.yaml`
+- `prompts/schemas/turn.onboarding.json`
+- `prompts/schemas/turn.chat.json`
 
-## Prompt layers
+## Layer Order (per turn)
 
-- `CORE_SYSTEM_PROMPT`
-  - Shared identity and behavior constraints.
-- `INTERVIEW_SYSTEM_PROMPT`
-  - Rules for interactive preference discovery.
-- `build_extraction_system_prompt()`
-  - Structured extraction instructions and output schema.
-- `RECOMMENDER_SYSTEM_PROMPT`
-  - Rules for ranking candidates.
-- `build_recommender_system_prompt()`
-  - Recommender instructions plus strict output schema.
+1. Base personality (`jeanclaude.md`)
+2. Global policies (`policies.md`)
+3. Mode prompt (`modes/<mode>.md`)
+4. Available skills section (`skills/catalog.yaml` filtered by mode)
+5. User context pack (profile)
+6. Task context (from current flow state)
+7. Message history and latest user message
 
-## Schemas
+## Flow State Machine
 
-- `USER_PREFERENCE_SCHEMA`
-  - Canonical profile shape.
-- `EXTRACTION_OUTPUT_SCHEMA`
-  - Expected extractor output shape.
-- `RECOMMENDATION_OUTPUT_SCHEMA`
-  - Expected recommendation output shape.
+Each mode uses a YAML flow in `prompts/flows/`.
 
-## Intended flow
+Flow responsibilities:
 
-1. Interview mode asks one question per turn.
-2. Extraction mode converts the latest user message into structured profile updates.
-3. Recommendation mode ranks a candidate set and explains the fit.
+- define `initial_state`
+- define per-state `task_context`
+- define per-state `output_schema`
+- define state transitions via simple `when.field == when.equals`
 
-## Example usage (Python)
+The conversation engine executes one model call per turn, validates required schema fields,
+applies patches, then transitions state.
 
-```python
-from jean_claude.prompts import (
-    build_extraction_system_prompt,
-    build_extraction_user_prompt,
-    build_recommender_system_prompt,
-    build_recommender_user_prompt,
-)
+## Runtime Modules
 
-extract_system = build_extraction_system_prompt()
-extract_user = build_extraction_user_prompt(
-    current_profile={"genres_like": [], "genres_avoid": []},
-    latest_user_message="I loved Arrival and Dune, but I dislike jump scares.",
-)
+- Prompt pack loading: `src/jean_claude/prompts/repository.py`
+- State-machine orchestration: `src/jean_claude/conversation/engine.py`
 
-recommend_system = build_recommender_system_prompt()
-recommend_user = build_recommender_user_prompt(
-    user_profile={"genres_like": ["sci-fi"]},
-    candidates=[{"id": "movie_1", "title": "Blade Runner 2049", "media_type": "movie"}],
-    top_n=5,
-)
-```
+## Config
+
+- Default prompt pack path: `./prompts` (or discovered parent prompt folder)
+- Override with `JEAN_CLAUDE_PROMPTS_DIR`

@@ -38,6 +38,7 @@ class InterviewFlowTestCase(unittest.TestCase):
             loaded = store.load()
             self.assertEqual(loaded["movie_vs_series"], "movies")
             self.assertIn("Great. I saved your baseline preferences.", "\n".join(output_lines))
+            self.assertIn("clearer picture of your taste", "\n".join(output_lines))
 
 
 if __name__ == "__main__":

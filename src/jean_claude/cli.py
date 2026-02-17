@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from typing import Sequence
 
+from jean_claude.chat import ChatSession
 from jean_claude.auth.openai_codex_oauth import login_openai_codex
 from jean_claude.auth.store import AuthStore
 from jean_claude.errors import JeanClaudeError
+from jean_claude.llm.base import DebugHook, LLMClient
 from jean_claude.llm.mock import MockLLMClient
-from jean_claude.llm.base import LLMClient
 from jean_claude.llm.openai_codex import DEFAULT_MODEL, OpenAICodexClient
 from jean_claude.prefs import PreferencesStore, run_interview, summarize_profile
 
@@ -40,6 +42,15 @@ def build_parser() -> argparse.ArgumentParser:
     llm_test.add_argument("--prompt", required=True)
     llm_test.add_argument("--system", default=None, help="Optional system prompt")
     llm_test.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
+    llm_test.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
+
+    chat_parser = subparsers.add_parser("chat", help="Open conversational chat mode")
+    chat_parser.add_argument("--provider", choices=["openai-codex", "mock"], default="openai-codex")
+    chat_parser.add_argument("--model", default=DEFAULT_MODEL)
+    chat_parser.add_argument("--message", default=None, help="Send one message and exit")
+    chat_parser.add_argument("--history-turns", type=int, default=8, help="Conversation turns kept in context")
+    chat_parser.add_argument("--no-profile", action="store_true", help="Do not include saved profile context")
+    chat_parser.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
 
     prefs_parser = subparsers.add_parser("prefs", help="User preference profile commands")
     prefs_subparsers = prefs_parser.add_subparsers(dest="prefs_command")
@@ -49,6 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     prefs_interview.add_argument("--model", default=DEFAULT_MODEL)
     prefs_interview.add_argument("--max-turns", type=int, default=8)
     prefs_interview.add_argument("--json", action="store_true", help="Print resulting profile as JSON")
+    prefs_interview.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
 
     prefs_show = prefs_subparsers.add_parser("show", help="Show saved preference profile")
     prefs_show.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
@@ -68,6 +80,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_auth(args)
         if args.command == "llm":
             return _run_llm(args)
+        if args.command == "chat":
+            return _run_chat(args)
         if args.command == "prefs":
             return _run_prefs(args)
         parser.print_help()
@@ -117,8 +131,14 @@ def _run_llm(args: argparse.Namespace) -> int:
         raise JeanClaudeError("Unknown llm command")
 
     client = _build_llm_client(args.provider, args.model)
+    debug_hook = _build_debug_hook(args.debug)
 
-    result = client.complete(args.prompt, model=args.model, system_prompt=args.system)
+    result = client.complete(
+        args.prompt,
+        model=args.model,
+        system_prompt=args.system,
+        debug_hook=debug_hook,
+    )
 
     if args.json:
         print(
@@ -172,17 +192,76 @@ def _run_prefs(args: argparse.Namespace) -> int:
         if args.max_turns < 1:
             raise JeanClaudeError("--max-turns must be >= 1")
         client = _build_llm_client(args.provider, args.model)
+        debug_hook = _build_debug_hook(args.debug)
         profile = run_interview(
             client=client,
             model=args.model,
             store=store,
             max_turns=args.max_turns,
+            debug_hook=debug_hook,
         )
         if args.json:
             print(json.dumps(profile, indent=2, sort_keys=True))
         return 0
 
     raise JeanClaudeError("Unknown prefs command")
+
+
+def _run_chat(args: argparse.Namespace) -> int:
+    if args.history_turns < 1:
+        raise JeanClaudeError("--history-turns must be >= 1")
+
+    client = _build_llm_client(args.provider, args.model)
+    debug_hook = _build_debug_hook(args.debug)
+    profile_context = None if args.no_profile else PreferencesStore().load()
+    session = ChatSession(
+        client=client,
+        model=args.model,
+        profile_context=profile_context,
+        history_turn_limit=args.history_turns,
+        debug_hook=debug_hook,
+    )
+
+    if args.message:
+        response = session.ask(args.message)
+        print(f"Jean-Claude: {response}")
+        return 0
+
+    print("Jean-Claude: Chat mode is on. Type /exit to quit, /profile to view saved preferences.")
+    opening = session.start()
+    if opening:
+        print(f"Jean-Claude: {opening}")
+    while True:
+        try:
+            user_message = input("You: ").strip()
+        except EOFError:
+            print()
+            break
+
+        if not user_message:
+            continue
+
+        command = user_message.casefold()
+        if command in {"/exit", "/quit"}:
+            print("Jean-Claude: Talk soon.")
+            break
+        if command in {"/help", "?"}:
+            print("Jean-Claude: Commands: /exit, /profile")
+            continue
+        if command == "/profile":
+            if profile_context is None:
+                print("Jean-Claude: Profile context is disabled for this chat session.")
+            else:
+                print("Jean-Claude: Current saved profile:")
+                current_profile = session.engine.state.get("profile", profile_context)
+                for line in summarize_profile(current_profile):
+                    print(f"- {line}")
+            continue
+
+        response = session.ask(user_message)
+        print(f"Jean-Claude: {response}")
+
+    return 0
 
 
 def _build_llm_client(provider: str, model: str) -> LLMClient:
@@ -194,3 +273,60 @@ def _build_llm_client(provider: str, model: str) -> LLMClient:
 def _format_epoch_ms(value: int) -> str:
     date = datetime.fromtimestamp(value / 1000, tz=UTC)
     return date.isoformat()
+
+
+def _build_debug_hook(enabled: bool) -> DebugHook | None:
+    if not enabled:
+        return None
+
+    def _hook(payload: dict[str, object]) -> None:
+        event_type = str(payload.get("type", "debug"))
+        sanitized, blocks = _extract_debug_blocks(payload)
+        print(f"[debug] {event_type}", file=sys.stderr)
+        print(json.dumps(sanitized, indent=2, sort_keys=True, default=str), file=sys.stderr)
+        for path, text in blocks:
+            print(f"[debug:block] {path}", file=sys.stderr)
+            print(text, file=sys.stderr)
+
+    return _hook
+
+
+def _extract_debug_blocks(payload: dict[str, object]) -> tuple[dict[str, object], list[tuple[str, str]]]:
+    blocks: list[tuple[str, str]] = []
+
+    def _walk(value: object, path: str) -> object:
+        if isinstance(value, dict):
+            return {key: _walk(sub_value, f"{path}.{key}" if path else key) for key, sub_value in value.items()}
+
+        if isinstance(value, list):
+            return [_walk(item, f"{path}[{idx}]") for idx, item in enumerate(value)]
+
+        if isinstance(value, str):
+            stripped = value.strip()
+            parsed = _try_parse_json_string(stripped)
+            if parsed is not None and isinstance(parsed, (dict, list)):
+                pretty = json.dumps(parsed, indent=2, sort_keys=True)
+                blocks.append((path or "value", pretty))
+                return f"<json string; see debug block '{path or 'value'}'>"
+
+            if "\n" in value:
+                blocks.append((path or "value", value))
+                return f"<multiline string; see debug block '{path or 'value'}'>"
+
+        return value
+
+    sanitized_payload = _walk(payload, "")
+    if not isinstance(sanitized_payload, dict):
+        return payload, blocks
+    return sanitized_payload, blocks
+
+
+def _try_parse_json_string(value: str) -> object | None:
+    if not value:
+        return None
+    if not (value.startswith("{") or value.startswith("[")):
+        return None
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return None

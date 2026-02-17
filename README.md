@@ -1,13 +1,13 @@
 # Jean-Claude (CLI MVP)
 
-This repository currently contains a minimal CLI implementation for Jean-Claude
-with:
+This repository currently contains a minimal CLI implementation for Jean-Claude with:
 
 - ChatGPT OAuth login for OpenAI Codex subscription access
 - OpenAI Codex inference test command
 - Mock LLM provider for offline development
-- v1 prompt pack for interview, extraction, and ranking flows
+- layered prompt-pack system sourced from filesystem files
 - Interactive preference interview flow (`jc prefs interview`)
+- Reusable open chat mode (`jc chat`)
 
 ## Quickstart
 
@@ -31,6 +31,12 @@ jc auth login openai-codex
 jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Recommend one sci-fi movie and explain why."
 ```
 
+3b. Inspect raw LLM request/response debug logs:
+
+```bash
+jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Recommend one sci-fi movie and explain why." --debug
+```
+
 4. Run with the local mock provider (no network):
 
 ```bash
@@ -41,6 +47,12 @@ jc llm test --provider mock --prompt "Find a thriller series"
 
 ```bash
 jc prefs interview --provider openai-codex --model gpt-5.3-codex
+```
+
+6. Start a general chat session:
+
+```bash
+jc chat --provider openai-codex --model gpt-5.3-codex
 ```
 
 ## Commands
@@ -58,6 +70,7 @@ jc auth logout openai-codex
 ```bash
 jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "..."
 jc llm test --provider mock --prompt "..."
+jc llm test --provider openai-codex --prompt "..." --debug
 ```
 
 ### JSON output
@@ -72,10 +85,24 @@ jc prefs show --json
 ```bash
 jc prefs interview --provider openai-codex --model gpt-5.3-codex
 jc prefs interview --provider mock --max-turns 1
+jc prefs interview --provider openai-codex --model gpt-5.3-codex --debug
 jc prefs show
 jc prefs show --json
 jc prefs reset
 ```
+
+### Chat
+
+```bash
+jc chat --provider openai-codex --model gpt-5.3-codex
+jc chat --provider mock --message "I want a cozy sci-fi movie"
+jc chat --provider openai-codex --model gpt-5.3-codex --debug
+```
+
+In interview mode, Jean-Claude now acknowledges each user answer before asking the next question.
+Interview and chat now run through a unified one-call-per-turn conversation engine.
+Use `--debug` on `llm test`, `chat`, and `prefs interview` to print what is sent to the LLM and what it returns.
+Debug events are printed to stderr so JSON output on stdout stays machine-readable.
 
 ## Storage
 
@@ -100,5 +127,16 @@ You can override this directory with:
 
 ## Prompt pack
 
-- Prompt definitions live in `src/jean_claude/prompts/v1.py`.
-- Prompt pack overview lives in `docs/PROMPTS_V1.md`.
+Prompt and flow behavior is editable without changing code:
+
+- Base prompts: `prompts/base/`
+- Mode prompts: `prompts/modes/`
+- Flow state machines (YAML): `prompts/flows/`
+- Output schemas (JSON): `prompts/schemas/`
+- Skills catalog (YAML): `prompts/skills/catalog.yaml`
+
+Prompt pack overview lives in `docs/PROMPTS_V1.md`.
+
+You can override prompt-pack location with:
+
+- `JEAN_CLAUDE_PROMPTS_DIR`

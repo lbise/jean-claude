@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "CLI foundation for the Jean-Claude media agent"
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = [
+  "PyYAML>=6.0",
+]
 
 [project.scripts]
 jc = "jean_claude.cli:main"

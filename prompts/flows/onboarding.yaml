@@ -1,0 +1,33 @@
+version: 1
+mode: onboarding_interview
+base_layers:
+  - base/jeanclaude.md
+  - base/policies.md
+mode_prompt: modes/onboarding.md
+skills_catalog: skills/catalog.yaml
+initial_state: baseline
+
+states:
+  baseline:
+    task_context: |
+      Start or continue onboarding.
+      If this is the first turn, greet briefly and ask the first question.
+      For subsequent turns, acknowledge the user input and ask one focused follow-up question.
+      Keep completion strict enough to produce useful first recommendations.
+    output_schema: schemas/turn.onboarding.json
+    transitions:
+      - when:
+          field: done
+          equals: true
+        to: completed
+      - to: baseline
+
+  completed:
+    task_context: |
+      Interview is complete.
+      Confirm profile quality and optionally request final confirmation.
+      Do not ask multiple new questions.
+    output_schema: schemas/turn.onboarding.json
+    terminal: true
+    transitions:
+      - to: completed

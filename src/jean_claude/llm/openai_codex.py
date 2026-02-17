@@ -10,14 +10,14 @@ from urllib.request import Request, urlopen
 from jean_claude.auth.openai_codex_oauth import refresh_openai_codex_token
 from jean_claude.auth.store import AuthStore, OpenAICodexCredentials
 from jean_claude.errors import AuthError, AuthExpiredError, LLMError, RetryableLLMError
-from jean_claude.llm.base import LLMResult
-from jean_claude.prompts import CORE_SYSTEM_PROMPT
+from jean_claude.llm.base import DebugHook, LLMResult
+from jean_claude.prompts import default_base_instructions
 
 
 DEFAULT_MODEL = "gpt-5.3-codex"
 DEFAULT_BASE_URL = "https://chatgpt.com/backend-api"
 DEFAULT_TIMEOUT_SECONDS = 90.0
-DEFAULT_INSTRUCTIONS = CORE_SYSTEM_PROMPT
+DEFAULT_INSTRUCTIONS = "You are Jean-Claude. Provide concise, practical answers."
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 USAGE_LIMIT_CODE_PATTERN = re.compile(r"usage_limit_reached|usage_not_included|rate_limit_exceeded", re.I)
@@ -51,23 +51,48 @@ class OpenAICodexClient:
         *,
         model: str | None = None,
         system_prompt: str | None = None,
+        debug_hook: DebugHook | None = None,
     ) -> LLMResult:
         if not prompt.strip():
             raise LLMError("Prompt must not be empty")
 
         selected_model = model or self.default_model
+        effective_system_prompt = self._resolve_system_prompt(system_prompt)
+        _emit_debug(
+            debug_hook,
+            {
+                "type": "llm.complete.request",
+                "provider": self.provider_name,
+                "model": selected_model,
+                "system_prompt": effective_system_prompt,
+                "prompt": prompt,
+            },
+        )
         credentials = self._require_credentials()
         credentials = self._ensure_fresh_credentials(credentials)
 
         refreshed_after_401 = False
         for attempt in range(self.max_retries + 1):
             try:
-                return self._request_once(
+                result = self._request_once(
                     credentials=credentials,
                     model=selected_model,
                     prompt=prompt,
-                    system_prompt=system_prompt,
+                    system_prompt=effective_system_prompt,
+                    debug_hook=debug_hook,
                 )
+                _emit_debug(
+                    debug_hook,
+                    {
+                        "type": "llm.complete.response",
+                        "provider": self.provider_name,
+                        "model": selected_model,
+                        "text": result.text,
+                        "usage": result.usage,
+                        "raw": result.raw,
+                    },
+                )
+                return result
             except AuthExpiredError:
                 if refreshed_after_401:
                     raise
@@ -105,7 +130,8 @@ class OpenAICodexClient:
         credentials: OpenAICodexCredentials,
         model: str,
         prompt: str,
-        system_prompt: str | None,
+        system_prompt: str,
+        debug_hook: DebugHook | None,
     ) -> LLMResult:
         url = f"{self.base_url}/codex/responses"
         headers = {
@@ -118,9 +144,20 @@ class OpenAICodexClient:
             "user-agent": "jean-claude/0.1.0",
         }
         body = self._build_request_body(model=model, prompt=prompt, system_prompt=system_prompt)
+        _emit_debug(
+            debug_hook,
+            {
+                "type": "llm.http.request",
+                "provider": self.provider_name,
+                "url": url,
+                "headers": _redact_headers(headers),
+                "json_body": body,
+            },
+        )
 
         text_chunks: list[str] = []
         completed_response: dict[str, Any] | None = None
+        response_status_code: int | None = None
 
         request = Request(
             url,
@@ -131,6 +168,7 @@ class OpenAICodexClient:
 
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
+                response_status_code = int(response.getcode() or 200)
                 for raw_line in response:
                     line = raw_line.decode("utf-8", errors="replace").strip()
                     if not line.startswith("data:"):
@@ -162,6 +200,15 @@ class OpenAICodexClient:
                             completed_response = response_data
         except HTTPError as exc:
             body_text = exc.read().decode("utf-8", errors="replace")
+            _emit_debug(
+                debug_hook,
+                {
+                    "type": "llm.http.error",
+                    "provider": self.provider_name,
+                    "status_code": exc.code,
+                    "body": body_text,
+                },
+            )
             self._raise_for_http_error(exc.code, body_text)
         except URLError as exc:
             message = str(exc.reason) if getattr(exc, "reason", None) else str(exc)
@@ -177,6 +224,17 @@ class OpenAICodexClient:
 
         usage = completed_response.get("usage", {}) if isinstance(completed_response, dict) else {}
         usage_data = usage if isinstance(usage, dict) else {}
+        _emit_debug(
+            debug_hook,
+            {
+                "type": "llm.http.response",
+                "provider": self.provider_name,
+                "status_code": response_status_code or 200,
+                "output_text": text,
+                "usage": usage_data,
+                "response": completed_response,
+            },
+        )
 
         return LLMResult(
             provider=self.provider_name,
@@ -296,3 +354,26 @@ class OpenAICodexClient:
             raise RetryableLLMError(f"Transient Codex error ({status_code}): {message}")
 
         raise LLMError(f"OpenAI Codex request failed ({status_code}): {message}")
+
+    def _resolve_system_prompt(self, system_prompt: str | None) -> str:
+        if isinstance(system_prompt, str) and system_prompt.strip():
+            return system_prompt.strip()
+        try:
+            return default_base_instructions()
+        except Exception:
+            return DEFAULT_INSTRUCTIONS
+
+
+def _emit_debug(debug_hook: DebugHook | None, payload: dict[str, Any]) -> None:
+    if debug_hook is not None:
+        debug_hook(payload)
+
+
+def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
+    redacted: dict[str, str] = {}
+    for key, value in headers.items():
+        if key.casefold() == "authorization":
+            redacted[key] = "Bearer <redacted>"
+        else:
+            redacted[key] = value
+    return redacted

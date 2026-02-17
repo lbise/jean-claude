@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
+
+
+DebugHook = Callable[[dict[str, Any]], None]
 
 
 @dataclass(slots=True)
@@ -20,5 +23,6 @@ class LLMClient(Protocol):
         *,
         model: str | None = None,
         system_prompt: str | None = None,
+        debug_hook: DebugHook | None = None,
     ) -> LLMResult:
         ...
