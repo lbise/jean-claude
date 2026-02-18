@@ -1,0 +1,7 @@
+version: 1
+tools:
+  - id: bash.run
+    name: Execute bash command
+    description: Run a shell command on the machine and capture output.
+    prompt: tools/bash.md
+    modes: [chat]

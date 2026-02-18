@@ -6,14 +6,23 @@ import sys
 from datetime import UTC, datetime
 from typing import Sequence
 
-from jean_claude.chat import ChatSession
+from jean_claude.agent import AgentOrchestrator
 from jean_claude.auth.openai_codex_oauth import login_openai_codex
 from jean_claude.auth.store import AuthStore
 from jean_claude.errors import JeanClaudeError
 from jean_claude.llm.base import DebugHook, LLMClient
 from jean_claude.llm.mock import MockLLMClient
 from jean_claude.llm.openai_codex import DEFAULT_MODEL, OpenAICodexClient
-from jean_claude.prefs import PreferencesStore, run_interview, summarize_profile
+from jean_claude.prompts import PromptPackRepository
+from jean_claude.tools import (
+    POLICY_ALLOWLIST,
+    POLICY_UNRESTRICTED,
+    BashPolicy,
+    BashRunTool,
+    ToolRegistry,
+    ToolSettings,
+    ToolSettingsStore,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,51 +31,44 @@ def build_parser() -> argparse.ArgumentParser:
 
     auth_parser = subparsers.add_parser("auth", help="Authentication commands")
     auth_subparsers = auth_parser.add_subparsers(dest="auth_command")
-
     auth_login = auth_subparsers.add_parser("login", help="Login with OAuth")
     auth_login.add_argument("provider", choices=["openai-codex"])
-    auth_login.add_argument("--no-browser", action="store_true", help="Do not open a browser automatically")
-
+    auth_login.add_argument("--no-browser", action="store_true", help="Do not open browser automatically")
     auth_status = auth_subparsers.add_parser("status", help="Show auth status")
     auth_status.add_argument("provider", choices=["openai-codex"])
-
     auth_logout = auth_subparsers.add_parser("logout", help="Remove stored credentials")
     auth_logout.add_argument("provider", choices=["openai-codex"])
 
-    llm_parser = subparsers.add_parser("llm", help="LLM commands")
+    llm_parser = subparsers.add_parser("llm", help="Low-level LLM commands")
     llm_subparsers = llm_parser.add_subparsers(dest="llm_command")
-
-    llm_test = llm_subparsers.add_parser("test", help="Run a simple LLM test prompt")
+    llm_test = llm_subparsers.add_parser("test", help="Run a basic prompt against provider")
     llm_test.add_argument("--provider", choices=["openai-codex", "mock"], default="openai-codex")
     llm_test.add_argument("--model", default=DEFAULT_MODEL)
     llm_test.add_argument("--prompt", required=True)
-    llm_test.add_argument("--system", default=None, help="Optional system prompt")
-    llm_test.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
-    llm_test.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
+    llm_test.add_argument("--system", default=None)
+    llm_test.add_argument("--json", action="store_true")
+    llm_test.add_argument("--debug", action="store_true")
 
-    chat_parser = subparsers.add_parser("chat", help="Open conversational chat mode")
+    chat_parser = subparsers.add_parser("chat", help="Interactive agent chat")
     chat_parser.add_argument("--provider", choices=["openai-codex", "mock"], default="openai-codex")
     chat_parser.add_argument("--model", default=DEFAULT_MODEL)
     chat_parser.add_argument("--message", default=None, help="Send one message and exit")
-    chat_parser.add_argument("--history-turns", type=int, default=8, help="Conversation turns kept in context")
-    chat_parser.add_argument("--no-profile", action="store_true", help="Do not include saved profile context")
-    chat_parser.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
+    chat_parser.add_argument("--debug", action="store_true")
 
-    prefs_parser = subparsers.add_parser("prefs", help="User preference profile commands")
-    prefs_subparsers = prefs_parser.add_subparsers(dest="prefs_command")
+    tools_parser = subparsers.add_parser("tools", help="Tooling and execution policy")
+    tools_subparsers = tools_parser.add_subparsers(dest="tools_command")
+    tools_subparsers.add_parser("list", help="List available tools")
 
-    prefs_interview = prefs_subparsers.add_parser("interview", help="Run interactive preference interview")
-    prefs_interview.add_argument("--provider", choices=["openai-codex", "mock"], default="openai-codex")
-    prefs_interview.add_argument("--model", default=DEFAULT_MODEL)
-    prefs_interview.add_argument("--max-turns", type=int, default=8)
-    prefs_interview.add_argument("--json", action="store_true", help="Print resulting profile as JSON")
-    prefs_interview.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
-
-    prefs_show = prefs_subparsers.add_parser("show", help="Show saved preference profile")
-    prefs_show.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
-
-    prefs_reset = prefs_subparsers.add_parser("reset", help="Reset saved preference profile")
-    prefs_reset.add_argument("--yes", action="store_true", help="Skip confirmation prompt")
+    policy_parser = tools_subparsers.add_parser("policy", help="Tool execution policy")
+    policy_subparsers = policy_parser.add_subparsers(dest="policy_command")
+    policy_subparsers.add_parser("show", help="Show current execution policy")
+    policy_set = policy_subparsers.add_parser("set", help="Set execution policy")
+    policy_set.add_argument("mode", choices=[POLICY_ALLOWLIST, POLICY_UNRESTRICTED])
+    policy_set.add_argument(
+        "--yes-i-understand",
+        action="store_true",
+        help="Required to enable unrestricted mode",
+    )
 
     return parser
 
@@ -82,8 +84,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_llm(args)
         if args.command == "chat":
             return _run_chat(args)
-        if args.command == "prefs":
-            return _run_prefs(args)
+        if args.command == "tools":
+            return _run_tools(args)
         parser.print_help()
         return 0
     except JeanClaudeError as exc:
@@ -117,10 +119,7 @@ def _run_auth(args: argparse.Namespace) -> int:
 
     if args.auth_command == "logout":
         removed = store.delete_openai_codex()
-        if removed:
-            print("Removed credentials for openai-codex.")
-        else:
-            print("No credentials found for openai-codex.")
+        print("Removed credentials for openai-codex." if removed else "No credentials found for openai-codex.")
         return 0
 
     raise JeanClaudeError("Unknown auth command")
@@ -130,9 +129,8 @@ def _run_llm(args: argparse.Namespace) -> int:
     if args.llm_command != "test":
         raise JeanClaudeError("Unknown llm command")
 
-    client = _build_llm_client(args.provider, args.model)
+    client = _build_llm_client(provider=args.provider, model=args.model)
     debug_hook = _build_debug_hook(args.debug)
-
     result = client.complete(
         args.prompt,
         model=args.model,
@@ -164,73 +162,26 @@ def _run_llm(args: argparse.Namespace) -> int:
     return 0
 
 
-def _run_prefs(args: argparse.Namespace) -> int:
-    store = PreferencesStore()
-
-    if args.prefs_command == "show":
-        profile = store.load()
-        if args.json:
-            print(json.dumps(profile, indent=2, sort_keys=True))
-            return 0
-
-        print("Saved preferences:")
-        for line in summarize_profile(profile):
-            print(f"- {line}")
-        return 0
-
-    if args.prefs_command == "reset":
-        if not args.yes:
-            confirmation = input("This will overwrite your saved profile. Continue? [y/N]: ").strip().casefold()
-            if confirmation not in {"y", "yes"}:
-                print("Cancelled.")
-                return 0
-        store.save({})
-        print("Reset preference profile.")
-        return 0
-
-    if args.prefs_command == "interview":
-        if args.max_turns < 1:
-            raise JeanClaudeError("--max-turns must be >= 1")
-        client = _build_llm_client(args.provider, args.model)
-        debug_hook = _build_debug_hook(args.debug)
-        profile = run_interview(
-            client=client,
-            model=args.model,
-            store=store,
-            max_turns=args.max_turns,
-            debug_hook=debug_hook,
-        )
-        if args.json:
-            print(json.dumps(profile, indent=2, sort_keys=True))
-        return 0
-
-    raise JeanClaudeError("Unknown prefs command")
-
-
 def _run_chat(args: argparse.Namespace) -> int:
-    if args.history_turns < 1:
-        raise JeanClaudeError("--history-turns must be >= 1")
-
-    client = _build_llm_client(args.provider, args.model)
+    llm_client = _build_llm_client(provider=args.provider, model=args.model)
     debug_hook = _build_debug_hook(args.debug)
-    profile_context = None if args.no_profile else PreferencesStore().load()
-    session = ChatSession(
-        client=client,
+    tool_registry = _build_tool_registry()
+
+    orchestrator = AgentOrchestrator(
+        llm_client=llm_client,
         model=args.model,
-        profile_context=profile_context,
-        history_turn_limit=args.history_turns,
+        mode="chat",
+        prompt_repository=PromptPackRepository(),
+        tool_registry=tool_registry,
         debug_hook=debug_hook,
     )
 
     if args.message:
-        response = session.ask(args.message)
-        print(f"Jean-Claude: {response}")
+        result = orchestrator.handle_user_message(args.message)
+        print(f"Jean-Claude: {result.assistant_message}")
         return 0
 
-    print("Jean-Claude: Chat mode is on. Type /exit to quit, /profile to view saved preferences.")
-    opening = session.start()
-    if opening:
-        print(f"Jean-Claude: {opening}")
+    print("Jean-Claude: Chat mode is on. Type /exit to quit.")
     while True:
         try:
             user_message = input("You: ").strip()
@@ -240,39 +191,64 @@ def _run_chat(args: argparse.Namespace) -> int:
 
         if not user_message:
             continue
-
-        command = user_message.casefold()
-        if command in {"/exit", "/quit"}:
+        if user_message.casefold() in {"/exit", "/quit"}:
             print("Jean-Claude: Talk soon.")
             break
-        if command in {"/help", "?"}:
-            print("Jean-Claude: Commands: /exit, /profile")
-            continue
-        if command == "/profile":
-            if profile_context is None:
-                print("Jean-Claude: Profile context is disabled for this chat session.")
-            else:
-                print("Jean-Claude: Current saved profile:")
-                current_profile = session.engine.state.get("profile", profile_context)
-                for line in summarize_profile(current_profile):
-                    print(f"- {line}")
-            continue
 
-        response = session.ask(user_message)
-        print(f"Jean-Claude: {response}")
+        result = orchestrator.handle_user_message(user_message)
+        print(f"Jean-Claude: {result.assistant_message}")
 
     return 0
 
 
-def _build_llm_client(provider: str, model: str) -> LLMClient:
+def _run_tools(args: argparse.Namespace) -> int:
+    settings_store = ToolSettingsStore()
+    settings = settings_store.load()
+
+    if args.tools_command == "list":
+        registry = _build_tool_registry(settings=settings)
+        print("Available tools:")
+        for tool in registry.list_tools():
+            print(f"- {tool.id}: {tool.description}")
+        return 0
+
+    if args.tools_command == "policy":
+        if args.policy_command == "show":
+            print(f"Execution policy: {settings.execution_policy}")
+            print("Allowlisted executables:")
+            for item in settings.normalized_allowlist():
+                print(f"- {item}")
+            return 0
+
+        if args.policy_command == "set":
+            mode = str(args.mode)
+            if mode == POLICY_UNRESTRICTED and not args.yes_i_understand:
+                raise JeanClaudeError(
+                    "Enabling unrestricted mode requires --yes-i-understand"
+                )
+            settings_store.save(ToolSettings(execution_policy=mode, bash_allowlist=settings.normalized_allowlist()))
+            print(f"Execution policy set to: {mode}")
+            return 0
+
+    raise JeanClaudeError("Unknown tools command")
+
+
+def _build_llm_client(*, provider: str, model: str) -> LLMClient:
     if provider == "openai-codex":
         return OpenAICodexClient(store=AuthStore(), default_model=model)
     return MockLLMClient()
 
 
+def _build_tool_registry(settings: ToolSettings | None = None) -> ToolRegistry:
+    current_settings = settings or ToolSettingsStore().load()
+    policy = BashPolicy(current_settings)
+    registry = ToolRegistry()
+    registry.register(BashRunTool(policy=policy))
+    return registry
+
+
 def _format_epoch_ms(value: int) -> str:
-    date = datetime.fromtimestamp(value / 1000, tz=UTC)
-    return date.isoformat()
+    return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat()
 
 
 def _build_debug_hook(enabled: bool) -> DebugHook | None:
@@ -315,10 +291,10 @@ def _extract_debug_blocks(payload: dict[str, object]) -> tuple[dict[str, object]
 
         return value
 
-    sanitized_payload = _walk(payload, "")
-    if not isinstance(sanitized_payload, dict):
+    sanitized = _walk(payload, "")
+    if not isinstance(sanitized, dict):
         return payload, blocks
-    return sanitized_payload, blocks
+    return sanitized, blocks
 
 
 def _try_parse_json_string(value: str) -> object | None:

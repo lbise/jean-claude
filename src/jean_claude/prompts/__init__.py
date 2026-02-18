@@ -1,28 +1,17 @@
-"""Prompt-pack loading from editable filesystem files."""
+"""Prompt-pack repository primitives."""
 
 from .repository import (
     FlowDefinition,
     FlowState,
     FlowTransition,
     PromptPackRepository,
-    SkillDefinition,
+    ToolDefinition,
 )
-
-
-def default_base_instructions(repository: PromptPackRepository | None = None) -> str:
-    repo = repository or PromptPackRepository()
-    parts = [
-        repo.read_text("base/jeanclaude.md"),
-        repo.read_text("base/policies.md"),
-    ]
-    return "\n\n".join(part for part in parts if part)
-
 
 __all__ = [
     "FlowDefinition",
     "FlowState",
     "FlowTransition",
     "PromptPackRepository",
-    "SkillDefinition",
-    "default_base_instructions",
+    "ToolDefinition",
 ]

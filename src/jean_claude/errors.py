@@ -16,3 +16,11 @@ class RetryableLLMError(LLMError):
 
 class AuthExpiredError(LLMError):
     """The current auth token is expired or invalid."""
+
+
+class ToolError(JeanClaudeError):
+    """Tool execution or policy error."""
+
+
+class FlowError(JeanClaudeError):
+    """Flow/prompt-pack loading or validation error."""

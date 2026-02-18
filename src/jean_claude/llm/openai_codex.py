@@ -11,13 +11,12 @@ from jean_claude.auth.openai_codex_oauth import refresh_openai_codex_token
 from jean_claude.auth.store import AuthStore, OpenAICodexCredentials
 from jean_claude.errors import AuthError, AuthExpiredError, LLMError, RetryableLLMError
 from jean_claude.llm.base import DebugHook, LLMResult
-from jean_claude.prompts import default_base_instructions
 
 
 DEFAULT_MODEL = "gpt-5.3-codex"
 DEFAULT_BASE_URL = "https://chatgpt.com/backend-api"
 DEFAULT_TIMEOUT_SECONDS = 90.0
-DEFAULT_INSTRUCTIONS = "You are Jean-Claude. Provide concise, practical answers."
+DEFAULT_INSTRUCTIONS = "You are a helpful assistant. Provide concise, practical answers."
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 USAGE_LIMIT_CODE_PATTERN = re.compile(r"usage_limit_reached|usage_not_included|rate_limit_exceeded", re.I)
@@ -358,10 +357,7 @@ class OpenAICodexClient:
     def _resolve_system_prompt(self, system_prompt: str | None) -> str:
         if isinstance(system_prompt, str) and system_prompt.strip():
             return system_prompt.strip()
-        try:
-            return default_base_instructions()
-        except Exception:
-            return DEFAULT_INSTRUCTIONS
+        return DEFAULT_INSTRUCTIONS
 
 
 def _emit_debug(debug_hook: DebugHook | None, payload: dict[str, Any]) -> None:

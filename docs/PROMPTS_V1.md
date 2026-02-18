@@ -1,49 +1,44 @@
-# Jean-Claude Prompt System (v1)
+# Prompt Pack
 
-The prompt system is now file-driven and outside application code.
+Jean-Claude loads prompts and flow config from the filesystem prompt pack.
 
-## Prompt Pack Layout
+## Layout
 
 - `prompts/base/jeanclaude.md`
 - `prompts/base/policies.md`
-- `prompts/modes/onboarding.md`
 - `prompts/modes/chat.md`
-- `prompts/skills/catalog.yaml`
-- `prompts/flows/onboarding.yaml`
+- `prompts/tools/catalog.yaml`
+- `prompts/tools/bash.md`
 - `prompts/flows/chat.yaml`
-- `prompts/schemas/turn.onboarding.json`
 - `prompts/schemas/turn.chat.json`
 
-## Layer Order (per turn)
+## Layer Order
 
-1. Base personality (`jeanclaude.md`)
-2. Global policies (`policies.md`)
-3. Mode prompt (`modes/<mode>.md`)
-4. Available skills section (`skills/catalog.yaml` filtered by mode)
-5. User context pack (profile)
-6. Task context (from current flow state)
-7. Message history and latest user message
+For each turn, system prompt layers are assembled in this order:
 
-## Flow State Machine
+1. base personality
+2. global policies
+3. mode prompt
+4. available tools
+5. task context from current flow state
+6. output schema contract
 
-Each mode uses a YAML flow in `prompts/flows/`.
+User prompt includes:
 
-Flow responsibilities:
+1. user profile/context JSON
+2. flow context JSON
+3. latest user message
+4. message history JSON
 
-- define `initial_state`
-- define per-state `task_context`
-- define per-state `output_schema`
-- define state transitions via simple `when.field == when.equals`
+## State Machine
 
-The conversation engine executes one model call per turn, validates required schema fields,
-applies patches, then transitions state.
+`prompts/flows/chat.yaml` defines state transitions.
 
-## Runtime Modules
+Each state provides:
 
-- Prompt pack loading: `src/jean_claude/prompts/repository.py`
-- State-machine orchestration: `src/jean_claude/conversation/engine.py`
+- `task_context`
+- `output_schema`
+- `tools`
+- `transitions`
 
-## Config
-
-- Default prompt pack path: `./prompts` (or discovered parent prompt folder)
-- Override with `JEAN_CLAUDE_PROMPTS_DIR`
+The runtime executes one LLM call per user turn, validates response shape, runs tool calls, and transitions state.

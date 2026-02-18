@@ -1,18 +1,21 @@
 version: 1
-mode: open_chat
+mode: chat
 base_layers:
   - base/jeanclaude.md
   - base/policies.md
 mode_prompt: modes/chat.md
-skills_catalog: skills/catalog.yaml
+tools_catalog: tools/catalog.yaml
 initial_state: active
 
 states:
   active:
+    tools:
+      - bash.run
     task_context: |
       Continue open conversation.
-      Answer the user naturally and concisely.
-      Use known profile context when relevant.
+      Answer naturally and concisely.
+      If machine interaction is needed, use tools.
+      Use `tool_calls` when running commands and keep `assistant_message` short.
     output_schema: schemas/turn.chat.json
     transitions:
       - to: active

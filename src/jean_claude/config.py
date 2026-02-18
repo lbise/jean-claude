@@ -18,8 +18,8 @@ def auth_file_path() -> Path:
     return state_dir() / "auth.json"
 
 
-def prefs_file_path() -> Path:
-    return state_dir() / "prefs.json"
+def settings_file_path() -> Path:
+    return state_dir() / "settings.json"
 
 
 def prompts_dir() -> Path:

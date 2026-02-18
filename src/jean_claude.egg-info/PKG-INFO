@@ -1,25 +1,25 @@
 Metadata-Version: 2.4
 Name: jean-claude
 Version: 0.1.0
-Summary: CLI foundation for the Jean-Claude media agent
+Summary: CLI foundation for the Jean-Claude machine assistant
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 Requires-Dist: PyYAML>=6.0
 
-# Jean-Claude (CLI MVP)
+# Jean-Claude
 
-This repository currently contains a minimal CLI implementation for Jean-Claude with:
+Jean-Claude is a local machine assistant.
 
-- ChatGPT OAuth login for OpenAI Codex subscription access
-- OpenAI Codex inference test command
-- Mock LLM provider for offline development
-- layered prompt-pack system sourced from filesystem files
-- Interactive preference interview flow (`jc prefs interview`)
-- Reusable open chat mode (`jc chat`)
+The current version focuses on a modular core:
+
+- chat with an LLM
+- tool system with executable tools
+- YAML-driven flow/state machine
+- filesystem prompt pack (editable without code changes)
+
+The first built-in tool is `bash.run`.
 
 ## Quickstart
-
-1. Create a virtual environment and install:
 
 ```bash
 python -m venv .venv
@@ -27,45 +27,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-2. Log in with ChatGPT OAuth (Codex subscription):
-
-```bash
-jc auth login openai-codex
-```
-
-3. Run an LLM connectivity test:
-
-```bash
-jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Recommend one sci-fi movie and explain why."
-```
-
-3b. Inspect raw LLM request/response debug logs:
-
-```bash
-jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Recommend one sci-fi movie and explain why." --debug
-```
-
-4. Run with the local mock provider (no network):
-
-```bash
-jc llm test --provider mock --prompt "Find a thriller series"
-```
-
-5. Run interactive preference interview:
-
-```bash
-jc prefs interview --provider openai-codex --model gpt-5.3-codex
-```
-
-6. Start a general chat session:
-
-```bash
-jc chat --provider openai-codex --model gpt-5.3-codex
-```
-
-## Commands
-
-### Auth
+## Auth (OpenAI Codex OAuth)
 
 ```bash
 jc auth login openai-codex
@@ -73,78 +35,79 @@ jc auth status openai-codex
 jc auth logout openai-codex
 ```
 
-### LLM
+## Chat
 
-```bash
-jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "..."
-jc llm test --provider mock --prompt "..."
-jc llm test --provider openai-codex --prompt "..." --debug
-```
-
-### JSON output
-
-```bash
-jc llm test --provider mock --prompt "..." --json
-jc prefs show --json
-```
-
-### Preferences
-
-```bash
-jc prefs interview --provider openai-codex --model gpt-5.3-codex
-jc prefs interview --provider mock --max-turns 1
-jc prefs interview --provider openai-codex --model gpt-5.3-codex --debug
-jc prefs show
-jc prefs show --json
-jc prefs reset
-```
-
-### Chat
+Interactive:
 
 ```bash
 jc chat --provider openai-codex --model gpt-5.3-codex
-jc chat --provider mock --message "I want a cozy sci-fi movie"
-jc chat --provider openai-codex --model gpt-5.3-codex --debug
 ```
 
-In interview mode, Jean-Claude now acknowledges each user answer before asking the next question.
-Interview and chat now run through a unified one-call-per-turn conversation engine.
-Use `--debug` on `llm test`, `chat`, and `prefs interview` to print what is sent to the LLM and what it returns.
-Debug events are printed to stderr so JSON output on stdout stays machine-readable.
+One-shot:
 
-## Storage
+```bash
+jc chat --provider openai-codex --model gpt-5.3-codex --message "List files in your home directory"
+```
 
-Credentials are stored at:
+Mock mode (offline testing):
 
-- `~/.jean-claude/auth.json`
+```bash
+jc chat --provider mock --message "List files in your home directory"
+```
 
-Preferences are stored at:
+## Tools
 
-- `~/.jean-claude/prefs.json`
+List tools:
 
-You can override this directory with:
+```bash
+jc tools list
+```
 
-- `JEAN_CLAUDE_STATE_DIR`
+Show execution policy:
 
-## Notes
+```bash
+jc tools policy show
+```
 
-- The OpenAI Codex flow here uses ChatGPT OAuth tokens and Codex backend
-  endpoints intended for Codex subscription usage.
-- This should be treated as an integration path for testing and experimentation
-  while the project remains in MVP mode.
+Default is strict allowlist.
 
-## Prompt pack
+Enable unrestricted mode (explicit opt-in):
 
-Prompt and flow behavior is editable without changing code:
+```bash
+jc tools policy set unrestricted --yes-i-understand
+```
 
-- Base prompts: `prompts/base/`
-- Mode prompts: `prompts/modes/`
-- Flow state machines (YAML): `prompts/flows/`
-- Output schemas (JSON): `prompts/schemas/`
-- Skills catalog (YAML): `prompts/skills/catalog.yaml`
+Switch back to safe default:
 
-Prompt pack overview lives in `docs/PROMPTS_V1.md`.
+```bash
+jc tools policy set allowlist
+```
 
-You can override prompt-pack location with:
+## Debug Logs
+
+Use `--debug` on `chat` and `llm test` to inspect prompts, payloads, tool calls, and provider responses.
+
+Debug logs are printed to stderr.
+
+## Prompt Pack
+
+Prompt/flow/tool definitions are external files in `prompts/`:
+
+- `prompts/base/`
+- `prompts/modes/`
+- `prompts/tools/`
+- `prompts/flows/`
+- `prompts/schemas/`
+
+Override location with:
 
 - `JEAN_CLAUDE_PROMPTS_DIR`
+
+## State Files
+
+- auth: `~/.jean-claude/auth.json`
+- tool settings: `~/.jean-claude/settings.json`
+
+Override base state directory with:
+
+- `JEAN_CLAUDE_STATE_DIR`

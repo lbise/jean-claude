@@ -1,18 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ChatTurn",
+  "title": "ChatToolTurn",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "assistant_message",
-    "next_question",
-    "profile_patch",
+    "tool_calls",
     "done",
     "notes"
   ],
   "properties": {
     "assistant_message": { "type": "string" },
-    "next_question": { "type": "string" },
     "done": { "type": "boolean" },
     "notes": {
       "type": "array",
@@ -20,43 +18,17 @@
     },
     "profile_patch": {
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "genres_like": { "type": "array", "items": { "type": "string" } },
-        "genres_avoid": { "type": "array", "items": { "type": "string" } },
-        "favorite_titles": { "type": "array", "items": { "type": "string" } },
-        "disliked_titles": { "type": "array", "items": { "type": "string" } },
-        "tone_like": { "type": "array", "items": { "type": "string" } },
-        "tone_avoid": { "type": "array", "items": { "type": "string" } },
-        "languages": { "type": "array", "items": { "type": "string" } },
-        "subtitles": {
-          "type": "string",
-          "enum": ["prefer_subtitles", "prefer_dubbed", "no_preference", "unknown"]
-        },
-        "recency": {
-          "type": "string",
-          "enum": ["new_releases", "mixed", "classics", "unknown"]
-        },
-        "release_year_min": {
-          "anyOf": [
-            { "type": "integer" },
-            { "type": "null" }
-          ]
-        },
-        "release_year_max": {
-          "anyOf": [
-            { "type": "integer" },
-            { "type": "null" }
-          ]
-        },
-        "content_limits": { "type": "array", "items": { "type": "string" } },
-        "movie_vs_series": {
-          "type": "string",
-          "enum": ["movies", "series", "both", "unknown"]
-        },
-        "episode_commitment": {
-          "type": "string",
-          "enum": ["short", "medium", "long", "unknown"]
+      "additionalProperties": true
+    },
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tool", "args"],
+        "properties": {
+          "tool": { "type": "string" },
+          "args": { "type": "object", "additionalProperties": true }
         }
       }
     }
