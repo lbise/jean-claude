@@ -14,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from typing import Any
 
+from jean_claude import __version__
 from jean_claude.auth.store import OpenAICodexCredentials
 from jean_claude.errors import AuthError
 
@@ -34,6 +35,7 @@ DEVICE_REDIRECT_URI = "https://auth.openai.com/deviceauth/callback"
 DEVICE_AUTH_USERCODE_URL = "https://auth.openai.com/api/accounts/deviceauth/usercode"
 DEVICE_AUTH_TOKEN_URL = "https://auth.openai.com/api/accounts/deviceauth/token"
 DEVICE_AUTH_VERIFICATION_URL = "https://auth.openai.com/codex/device"
+USER_AGENT = f"jean-claude/{__version__}"
 
 SUCCESS_HTML = (
     "<!doctype html><html><head><meta charset='utf-8'><title>Authenticated</title>"
@@ -299,7 +301,7 @@ def _request_device_authorization_session() -> DeviceAuthorizationSession:
     request = Request(
         DEVICE_AUTH_USERCODE_URL,
         data=json.dumps({"client_id": CLIENT_ID}).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
         method="POST",
     )
 
@@ -354,7 +356,7 @@ def _poll_device_authorization_once(session: DeviceAuthorizationSession) -> Devi
                 "user_code": session.user_code,
             }
         ).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
         method="POST",
     )
 
@@ -426,7 +428,7 @@ def _token_request(data: dict[str, str]) -> dict[str, Any]:
     request = Request(
         TOKEN_URL,
         data=encoded,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": USER_AGENT},
         method="POST",
     )
 
