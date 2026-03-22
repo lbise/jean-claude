@@ -3,6 +3,8 @@ from __future__ import annotations
 import io
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from jean_claude.auth.store import OpenAICodexCredentials
@@ -34,6 +36,11 @@ class CLITestCase(unittest.TestCase):
         login_mock.assert_called_once_with(no_browser=True, device_auth=True)
         store_cls.return_value.set_openai_codex.assert_called_once_with(credentials)
 
+    def test_cli_chat_parser_accepts_system_prompt_file(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["chat", "--system-prompt-file", "prompts/system.md"])
+        self.assertEqual(args.system_prompt_file, "prompts/system.md")
+
     def test_cli_llm_test_mock_json(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):
@@ -60,19 +67,23 @@ class CLITestCase(unittest.TestCase):
 
     def test_cli_chat_one_shot(self) -> None:
         output = io.StringIO()
-        with redirect_stdout(output):
-            exit_code = main(
-                [
-                    "chat",
-                    "--provider",
-                    "mock",
-                    "--model",
-                    "mock-v1",
-                    "--message",
-                    "I loved Dune and Arrival",
-                    "--no-profile",
-                ]
-            )
+        with TemporaryDirectory() as temp_dir:
+            system_prompt_path = Path(temp_dir) / "system.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+            with redirect_stdout(output):
+                exit_code = main(
+                    [
+                        "chat",
+                        "--provider",
+                        "mock",
+                        "--model",
+                        "mock-v1",
+                        "--message",
+                        "I loved Dune and Arrival",
+                        "--system-prompt-file",
+                        str(system_prompt_path),
+                    ]
+                )
         self.assertEqual(exit_code, 0)
         self.assertIn("Jean-Claude:", output.getvalue())
 
@@ -98,23 +109,27 @@ class CLITestCase(unittest.TestCase):
     def test_cli_chat_debug_expands_newlines(self) -> None:
         output = io.StringIO()
         debug_output = io.StringIO()
-        with redirect_stdout(output), redirect_stderr(debug_output):
-            exit_code = main(
-                [
-                    "chat",
-                    "--provider",
-                    "mock",
-                    "--model",
-                    "mock-v1",
-                    "--message",
-                    "hello",
-                    "--no-profile",
-                    "--debug",
-                ]
-            )
+        with TemporaryDirectory() as temp_dir:
+            system_prompt_path = Path(temp_dir) / "system.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+            with redirect_stdout(output), redirect_stderr(debug_output):
+                exit_code = main(
+                    [
+                        "chat",
+                        "--provider",
+                        "mock",
+                        "--model",
+                        "mock-v1",
+                        "--message",
+                        "hello",
+                        "--system-prompt-file",
+                        str(system_prompt_path),
+                        "--debug",
+                    ]
+                )
         self.assertEqual(exit_code, 0)
-        self.assertIn("# Mode: Open Chat", debug_output.getvalue())
-        self.assertIn("# Mode: Open Chat\n\nObjective:", debug_output.getvalue())
+        self.assertIn("# Prompt", debug_output.getvalue())
+        self.assertIn("# Latest User Message", debug_output.getvalue())
 
 
 if __name__ == "__main__":

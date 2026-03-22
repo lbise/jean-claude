@@ -19,10 +19,10 @@ class PromptRepositoryTestCase(unittest.TestCase):
         self.assertEqual(flow.initial_state, "active")
         self.assertIn("active", flow.states)
 
-    def test_default_base_instructions_stacks_two_layers(self) -> None:
+    def test_default_base_instructions_prefers_system_prompt_file(self) -> None:
         instructions = default_base_instructions()
-        self.assertIn("Core Personality", instructions)
-        self.assertIn("Global Policies", instructions)
+        self.assertIn("Jean-Claude System Prompt", instructions)
+        self.assertIn("general-purpose chat assistant", instructions)
 
 
 if __name__ == "__main__":

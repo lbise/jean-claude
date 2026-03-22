@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jean-claude"
 version = "0.1.0"
-description = "CLI foundation for the Jean-Claude media agent"
+description = "Starter CLI for a configurable LLM chat assistant"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

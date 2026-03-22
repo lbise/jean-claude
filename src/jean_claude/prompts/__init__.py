@@ -11,6 +11,13 @@ from .repository import (
 
 def default_base_instructions(repository: PromptPackRepository | None = None) -> str:
     repo = repository or PromptPackRepository()
+    try:
+        system_prompt = repo.read_text("system.md")
+    except Exception:
+        system_prompt = ""
+    if system_prompt:
+        return system_prompt
+
     parts = [
         repo.read_text("base/jeanclaude.md"),
         repo.read_text("base/policies.md"),

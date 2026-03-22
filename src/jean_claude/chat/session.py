@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from pathlib import Path
 
-from jean_claude.conversation import ConversationEngine
-from jean_claude.conversation.engine import OPEN_CHAT_MODE
+from jean_claude.config import default_system_prompt_path
+from jean_claude.errors import JeanClaudeError
 from jean_claude.llm.base import DebugHook, LLMClient
 
 
@@ -20,31 +20,21 @@ class ChatSession:
         *,
         client: LLMClient,
         model: str,
-        profile_context: dict[str, Any] | None = None,
+        system_prompt_path: Path | None = None,
         history_turn_limit: int = 8,
         debug_hook: DebugHook | None = None,
     ) -> None:
-        self.engine = ConversationEngine(
-            client=client,
-            model=model,
-            mode=OPEN_CHAT_MODE,
-            initial_state={"profile": profile_context or {}},
-            history_turn_limit=history_turn_limit,
-            debug_hook=debug_hook,
-        )
+        self.client = client
+        self.model = model
+        self.debug_hook = debug_hook
+        self.history_turn_limit = max(1, history_turn_limit)
+        self.system_prompt_path = (system_prompt_path or default_system_prompt_path()).expanduser().resolve()
         self.messages: list[ChatMessage] = []
         self._started = False
 
     def start(self) -> str:
-        if self._started:
-            return ""
         self._started = True
-        turn = self.engine.start()
-        parts = [part for part in [turn.assistant_message, turn.next_question] if part]
-        text = "\n".join(parts)
-        if text:
-            self.messages.append(ChatMessage(role="assistant", content=text))
-        return text
+        return ""
 
     def ask(self, user_message: str) -> str:
         text = user_message.strip()
@@ -54,11 +44,49 @@ class ChatSession:
         if not self._started:
             self.start()
 
-        self.messages.append(ChatMessage(role="user", content=text))
-        turn = self.engine.reply(text)
-        parts = [part for part in [turn.assistant_message, turn.next_question] if part]
-        reply = "\n".join(parts).strip()
+        result = self.client.complete(
+            self._build_prompt(text),
+            model=self.model,
+            system_prompt=self._read_system_prompt(),
+            debug_hook=self.debug_hook,
+        )
+        reply = result.text.strip()
         if not reply:
-            reply = "I heard you. Can you share a bit more detail?"
+            reply = "I did not get a response back from the model."
+
+        self.messages.append(ChatMessage(role="user", content=text))
         self.messages.append(ChatMessage(role="assistant", content=reply))
         return reply
+
+    def _build_prompt(self, latest_user_message: str) -> str:
+        history_lines = []
+        for message in self._recent_messages():
+            speaker = "User" if message.role == "user" else "Assistant"
+            history_lines.append(f"{speaker}: {message.content}")
+
+        history_text = "\n\n".join(history_lines) if history_lines else "(none yet)"
+        return "\n\n".join(
+            [
+                "Continue the conversation and reply only with the assistant's next message.",
+                "# Conversation History",
+                history_text,
+                "# Latest User Message",
+                latest_user_message,
+            ]
+        )
+
+    def _recent_messages(self) -> list[ChatMessage]:
+        max_messages = self.history_turn_limit * 2
+        if len(self.messages) <= max_messages:
+            return list(self.messages)
+        return self.messages[-max_messages:]
+
+    def _read_system_prompt(self) -> str:
+        try:
+            text = self.system_prompt_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise JeanClaudeError(f"Unable to read system prompt file '{self.system_prompt_path}': {exc}") from exc
+
+        if not text.strip():
+            raise JeanClaudeError(f"System prompt file '{self.system_prompt_path}' is empty")
+        return text

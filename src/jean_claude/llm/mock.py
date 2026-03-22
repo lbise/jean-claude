@@ -77,6 +77,28 @@ class MockLLMClient:
             )
             return result
 
+        generic_chat_message = _parse_latest_chat_message(prompt)
+        if generic_chat_message:
+            result = LLMResult(
+                provider=self.provider_name,
+                model=selected_model,
+                text=f"Mock reply: {generic_chat_message[:120]}",
+                usage={"input_tokens": 0, "output_tokens": 0},
+                raw={"source": "mock", "mode": "generic_chat"},
+            )
+            _emit_debug(
+                debug_hook,
+                {
+                    "type": "llm.complete.response",
+                    "provider": self.provider_name,
+                    "model": selected_model,
+                    "text": result.text,
+                    "usage": result.usage,
+                    "raw": result.raw,
+                },
+            )
+            return result
+
         prefix = "Mock recommendation"
         if system_prompt:
             prefix = f"{prefix} ({system_prompt[:40]})"
@@ -218,6 +240,14 @@ def _extract_block(prompt: str, marker: str) -> str | None:
 
 def _as_text(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _parse_latest_chat_message(prompt: str) -> str:
+    marker = "# Latest User Message"
+    start = prompt.find(marker)
+    if start == -1:
+        return ""
+    return prompt[start + len(marker) :].strip()
 
 
 def _infer_profile_from_text(profile: dict[str, Any], user_message: str) -> dict[str, Any]:

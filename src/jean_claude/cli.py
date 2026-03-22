@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Sequence
 
 from jean_claude.chat import ChatSession
@@ -17,7 +18,7 @@ from jean_claude.prefs import PreferencesStore, run_interview, summarize_profile
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="jc", description="Jean-Claude CLI")
+    parser = argparse.ArgumentParser(prog="jc", description="Jean-Claude LLM chat CLI")
     subparsers = parser.add_subparsers(dest="command")
 
     auth_parser = subparsers.add_parser("auth", help="Authentication commands")
@@ -50,7 +51,11 @@ def build_parser() -> argparse.ArgumentParser:
     chat_parser.add_argument("--model", default=DEFAULT_MODEL)
     chat_parser.add_argument("--message", default=None, help="Send one message and exit")
     chat_parser.add_argument("--history-turns", type=int, default=8, help="Conversation turns kept in context")
-    chat_parser.add_argument("--no-profile", action="store_true", help="Do not include saved profile context")
+    chat_parser.add_argument(
+        "--system-prompt-file",
+        default=None,
+        help="Markdown file sent in full as the system prompt on every turn",
+    )
     chat_parser.add_argument("--debug", action="store_true", help="Print LLM request/response debug logs")
 
     prefs_parser = subparsers.add_parser("prefs", help="User preference profile commands")
@@ -214,11 +219,10 @@ def _run_chat(args: argparse.Namespace) -> int:
 
     client = _build_llm_client(args.provider, args.model)
     debug_hook = _build_debug_hook(args.debug)
-    profile_context = None if args.no_profile else PreferencesStore().load()
     session = ChatSession(
         client=client,
         model=args.model,
-        profile_context=profile_context,
+        system_prompt_path=Path(args.system_prompt_file) if args.system_prompt_file else None,
         history_turn_limit=args.history_turns,
         debug_hook=debug_hook,
     )
@@ -228,10 +232,7 @@ def _run_chat(args: argparse.Namespace) -> int:
         print(f"Jean-Claude: {response}")
         return 0
 
-    print("Jean-Claude: Chat mode is on. Type /exit to quit, /profile to view saved preferences.")
-    opening = session.start()
-    if opening:
-        print(f"Jean-Claude: {opening}")
+    print("Jean-Claude: Chat mode is on. Type /exit to quit, /system to show the active system prompt file.")
     while True:
         try:
             user_message = input("You: ").strip()
@@ -247,16 +248,10 @@ def _run_chat(args: argparse.Namespace) -> int:
             print("Jean-Claude: Talk soon.")
             break
         if command in {"/help", "?"}:
-            print("Jean-Claude: Commands: /exit, /profile")
+            print("Jean-Claude: Commands: /exit, /system")
             continue
-        if command == "/profile":
-            if profile_context is None:
-                print("Jean-Claude: Profile context is disabled for this chat session.")
-            else:
-                print("Jean-Claude: Current saved profile:")
-                current_profile = session.engine.state.get("profile", profile_context)
-                for line in summarize_profile(current_profile):
-                    print(f"- {line}")
+        if command == "/system":
+            print(f"Jean-Claude: Using system prompt file {session.system_prompt_path}")
             continue
 
         response = session.ask(user_message)

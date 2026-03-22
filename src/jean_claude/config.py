@@ -22,6 +22,10 @@ def prefs_file_path() -> Path:
     return state_dir() / "prefs.json"
 
 
+def default_system_prompt_path() -> Path:
+    return prompts_dir() / "system.md"
+
+
 def prompts_dir() -> Path:
     env_override = os.getenv("JEAN_CLAUDE_PROMPTS_DIR", "").strip()
     if env_override:
