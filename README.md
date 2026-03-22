@@ -25,6 +25,12 @@ pip install -e .
 jc auth login openai-codex
 ```
 
+For headless or remote machines, use device code login:
+
+```bash
+jc auth login openai-codex --device-auth
+```
+
 3. Run an LLM connectivity test:
 
 ```bash
@@ -61,6 +67,7 @@ jc chat --provider openai-codex --model gpt-5.3-codex
 
 ```bash
 jc auth login openai-codex
+jc auth login openai-codex --device-auth
 jc auth status openai-codex
 jc auth logout openai-codex
 ```

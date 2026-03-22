@@ -3,11 +3,37 @@ from __future__ import annotations
 import io
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from unittest.mock import patch
 
-from jean_claude.cli import main
+from jean_claude.auth.store import OpenAICodexCredentials
+from jean_claude.cli import build_parser, main
 
 
 class CLITestCase(unittest.TestCase):
+    def test_cli_auth_parser_accepts_device_auth_flag(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["auth", "login", "openai-codex", "--device-auth"])
+        self.assertTrue(args.device_auth)
+
+    def test_cli_auth_login_passes_device_auth_flag(self) -> None:
+        credentials = OpenAICodexCredentials(
+            access_token="access",
+            refresh_token="refresh",
+            expires_at_ms=1_700_000_000_000,
+            account_id="acct_123",
+        )
+        output = io.StringIO()
+
+        with patch("jean_claude.cli.login_openai_codex", return_value=credentials) as login_mock, patch(
+            "jean_claude.cli.AuthStore"
+        ) as store_cls:
+            with redirect_stdout(output):
+                exit_code = main(["auth", "login", "openai-codex", "--device-auth", "--no-browser"])
+
+        self.assertEqual(exit_code, 0)
+        login_mock.assert_called_once_with(no_browser=True, device_auth=True)
+        store_cls.return_value.set_openai_codex.assert_called_once_with(credentials)
+
     def test_cli_llm_test_mock_json(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     auth_login = auth_subparsers.add_parser("login", help="Login with OAuth")
     auth_login.add_argument("provider", choices=["openai-codex"])
     auth_login.add_argument("--no-browser", action="store_true", help="Do not open a browser automatically")
+    auth_login.add_argument("--device-auth", action="store_true", help="Use device code login for headless environments")
 
     auth_status = auth_subparsers.add_parser("status", help="Show auth status")
     auth_status.add_argument("provider", choices=["openai-codex"])
@@ -95,7 +96,7 @@ def _run_auth(args: argparse.Namespace) -> int:
     store = AuthStore()
 
     if args.auth_command == "login":
-        credentials = login_openai_codex(no_browser=args.no_browser)
+        credentials = login_openai_codex(no_browser=args.no_browser, device_auth=args.device_auth)
         store.set_openai_codex(credentials)
         print("Stored credentials for openai-codex.")
         print(f"Account ID: {credentials.account_id}")

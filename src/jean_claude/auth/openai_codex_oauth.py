@@ -9,10 +9,10 @@ import time
 import webbrowser
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
-from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+from typing import Any
 
 from jean_claude.auth.store import OpenAICodexCredentials
 from jean_claude.errors import AuthError
@@ -29,6 +29,11 @@ CALLBACK_HOST = "127.0.0.1"
 CALLBACK_PORT = 1455
 CALLBACK_PATH = "/auth/callback"
 CALLBACK_TIMEOUT_SECONDS = 300
+DEVICE_AUTH_TIMEOUT_SECONDS = 900
+DEVICE_REDIRECT_URI = "https://auth.openai.com/deviceauth/callback"
+DEVICE_AUTH_USERCODE_URL = "https://auth.openai.com/api/accounts/deviceauth/usercode"
+DEVICE_AUTH_TOKEN_URL = "https://auth.openai.com/api/accounts/deviceauth/token"
+DEVICE_AUTH_VERIFICATION_URL = "https://auth.openai.com/codex/device"
 
 SUCCESS_HTML = (
     "<!doctype html><html><head><meta charset='utf-8'><title>Authenticated</title>"
@@ -40,6 +45,19 @@ SUCCESS_HTML = (
 class ParsedAuthorizationInput:
     code: str | None
     state: str | None
+
+
+@dataclass(slots=True)
+class DeviceAuthorizationSession:
+    device_auth_id: str
+    user_code: str
+    interval_seconds: int
+
+
+@dataclass(slots=True)
+class DeviceAuthorizationGrant:
+    authorization_code: str
+    code_verifier: str
 
 
 @dataclass(slots=True)
@@ -162,7 +180,15 @@ def parse_authorization_input(raw: str) -> ParsedAuthorizationInput:
     return ParsedAuthorizationInput(code=text, state=None)
 
 
-def login_openai_codex(*, no_browser: bool = False, originator: str = "jean-claude") -> OpenAICodexCredentials:
+def login_openai_codex(
+    *,
+    no_browser: bool = False,
+    originator: str = "jean-claude",
+    device_auth: bool = False,
+) -> OpenAICodexCredentials:
+    if device_auth:
+        return login_openai_codex_device_code(originator=originator)
+
     verifier, challenge = generate_pkce_pair()
     expected_state = secrets.token_hex(16)
 
@@ -217,6 +243,31 @@ def login_openai_codex(*, no_browser: bool = False, originator: str = "jean-clau
         callback_server.close()
 
 
+def login_openai_codex_device_code(*, originator: str = "jean-claude") -> OpenAICodexCredentials:
+    _ = originator
+    session = _request_device_authorization_session()
+
+    print("Follow these steps to sign in with ChatGPT device code:")
+    print(f"1) Open: {DEVICE_AUTH_VERIFICATION_URL}")
+    print(f"2) Enter code: {session.user_code}")
+    print("This one-time code expires in about 15 minutes.")
+
+    grant = _poll_device_authorization(session, timeout_seconds=DEVICE_AUTH_TIMEOUT_SECONDS)
+    token_payload = exchange_authorization_code(
+        code=grant.authorization_code,
+        verifier=grant.code_verifier,
+        redirect_uri=DEVICE_REDIRECT_URI,
+    )
+    account_id = extract_account_id(token_payload["access_token"])
+
+    return OpenAICodexCredentials(
+        access_token=token_payload["access_token"],
+        refresh_token=token_payload["refresh_token"],
+        expires_at_ms=int(time.time() * 1000 + token_payload["expires_in"] * 1000),
+        account_id=account_id,
+    )
+
+
 def refresh_openai_codex_token(credentials: OpenAICodexCredentials) -> OpenAICodexCredentials:
     data = {
         "grant_type": "refresh_token",
@@ -233,15 +284,141 @@ def refresh_openai_codex_token(credentials: OpenAICodexCredentials) -> OpenAICod
     )
 
 
-def exchange_authorization_code(*, code: str, verifier: str) -> dict[str, Any]:
+def exchange_authorization_code(*, code: str, verifier: str, redirect_uri: str = REDIRECT_URI) -> dict[str, Any]:
     data = {
         "grant_type": "authorization_code",
         "client_id": CLIENT_ID,
         "code": code,
         "code_verifier": verifier,
-        "redirect_uri": REDIRECT_URI,
+        "redirect_uri": redirect_uri,
     }
     return _token_request(data)
+
+
+def _request_device_authorization_session() -> DeviceAuthorizationSession:
+    request = Request(
+        DEVICE_AUTH_USERCODE_URL,
+        data=json.dumps({"client_id": CLIENT_ID}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=30.0) as response:
+            body = response.read().decode("utf-8", errors="replace")
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        if exc.code == 404:
+            raise AuthError(
+                "Device code login is not enabled for this server. Retry without --device-auth."
+            ) from exc
+        raise AuthError(f"Device code request failed ({exc.code}): {body}") from exc
+    except URLError as exc:
+        raise AuthError(f"Device code request failed: {exc.reason}") from exc
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise AuthError("Device code response is not valid JSON") from exc
+
+    if not isinstance(payload, dict):
+        raise AuthError("Device code response has invalid structure")
+
+    return _parse_device_user_code_payload(payload)
+
+
+def _poll_device_authorization(session: DeviceAuthorizationSession, *, timeout_seconds: int) -> DeviceAuthorizationGrant:
+    started_at = time.monotonic()
+    interval_seconds = max(session.interval_seconds, 1)
+
+    while True:
+        grant = _poll_device_authorization_once(session)
+        if grant is not None:
+            return grant
+
+        elapsed = time.monotonic() - started_at
+        if elapsed >= timeout_seconds:
+            raise AuthError("Device code login timed out after 15 minutes")
+
+        remaining_seconds = max(timeout_seconds - elapsed, 1.0)
+        sleep_seconds = min(float(interval_seconds), remaining_seconds)
+        time.sleep(sleep_seconds)
+
+
+def _poll_device_authorization_once(session: DeviceAuthorizationSession) -> DeviceAuthorizationGrant | None:
+    request = Request(
+        DEVICE_AUTH_TOKEN_URL,
+        data=json.dumps(
+            {
+                "device_auth_id": session.device_auth_id,
+                "user_code": session.user_code,
+            }
+        ).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=30.0) as response:
+            body = response.read().decode("utf-8", errors="replace")
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        if exc.code in {403, 404}:
+            return None
+        raise AuthError(f"Device authorization failed ({exc.code}): {body}") from exc
+    except URLError as exc:
+        raise AuthError(f"Device authorization failed: {exc.reason}") from exc
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise AuthError("Device authorization response is not valid JSON") from exc
+
+    if not isinstance(payload, dict):
+        raise AuthError("Device authorization response has invalid structure")
+
+    return _parse_device_token_payload(payload)
+
+
+def _parse_device_user_code_payload(payload: dict[str, Any]) -> DeviceAuthorizationSession:
+    device_auth_id = payload.get("device_auth_id")
+    if not isinstance(device_auth_id, str) or not device_auth_id.strip():
+        raise AuthError("Device code response missing 'device_auth_id'")
+
+    user_code = payload.get("user_code")
+    if not isinstance(user_code, str) or not user_code.strip():
+        user_code = payload.get("usercode")
+    if not isinstance(user_code, str) or not user_code.strip():
+        raise AuthError("Device code response missing 'user_code'")
+
+    interval_raw = payload.get("interval", "5")
+    try:
+        interval_seconds = int(str(interval_raw).strip())
+    except (TypeError, ValueError) as exc:
+        raise AuthError("Device code response contains invalid 'interval'") from exc
+    if interval_seconds < 1:
+        interval_seconds = 1
+
+    return DeviceAuthorizationSession(
+        device_auth_id=device_auth_id.strip(),
+        user_code=user_code.strip(),
+        interval_seconds=interval_seconds,
+    )
+
+
+def _parse_device_token_payload(payload: dict[str, Any]) -> DeviceAuthorizationGrant:
+    authorization_code = payload.get("authorization_code")
+    if not isinstance(authorization_code, str) or not authorization_code.strip():
+        raise AuthError("Device authorization response missing 'authorization_code'")
+
+    code_verifier = payload.get("code_verifier")
+    if not isinstance(code_verifier, str) or not code_verifier.strip():
+        raise AuthError("Device authorization response missing 'code_verifier'")
+
+    return DeviceAuthorizationGrant(
+        authorization_code=authorization_code.strip(),
+        code_verifier=code_verifier.strip(),
+    )
 
 
 def _token_request(data: dict[str, str]) -> dict[str, Any]:
