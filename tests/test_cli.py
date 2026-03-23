@@ -131,6 +131,35 @@ class CLITestCase(unittest.TestCase):
         self.assertIn("# Prompt", debug_output.getvalue())
         self.assertIn("# Latest User Message", debug_output.getvalue())
 
+    def test_cli_chat_one_shot_expands_markdown_references_in_debug_prompt(self) -> None:
+        output = io.StringIO()
+        debug_output = io.StringIO()
+        with TemporaryDirectory() as temp_dir:
+            base_path = Path(temp_dir)
+            system_prompt_path = base_path / "system.md"
+            notes_path = base_path / "notes.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+            notes_path.write_text("# Notes\n\nShip the release.", encoding="utf-8")
+            with patch("jean_claude.chat.session.Path.cwd", return_value=base_path):
+                with redirect_stdout(output), redirect_stderr(debug_output):
+                    exit_code = main(
+                        [
+                            "chat",
+                            "--provider",
+                            "mock",
+                            "--model",
+                            "mock-v1",
+                            "--message",
+                            "Summarize @notes.md",
+                            "--system-prompt-file",
+                            str(system_prompt_path),
+                            "--debug",
+                        ]
+                    )
+        self.assertEqual(exit_code, 0)
+        self.assertIn("[Included markdown file: notes.md]", debug_output.getvalue())
+        self.assertIn("# Notes\n\nShip the release.", debug_output.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

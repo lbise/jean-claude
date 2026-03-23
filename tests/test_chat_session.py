@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from jean_claude.chat import ChatSession
 from jean_claude.llm.base import LLMResult
@@ -62,6 +63,76 @@ class ChatSessionTestCase(unittest.TestCase):
         self.assertIn("User: Hello there", client.calls[1]["prompt"])
         self.assertIn("Assistant: First reply", client.calls[1]["prompt"])
         self.assertIn("# Latest User Message\n\nCan you elaborate?", client.calls[1]["prompt"])
+
+    def test_chat_session_expands_markdown_file_references(self) -> None:
+        client = RecordingLLMClient(["First reply"])
+
+        with TemporaryDirectory() as temp_dir:
+            base_path = Path(temp_dir)
+            system_prompt_path = base_path / "system.md"
+            notes_path = base_path / "notes.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+            notes_path.write_text("# Notes\n\nUse the latest draft.", encoding="utf-8")
+
+            session = ChatSession(
+                client=client,
+                model="recording-v1",
+                system_prompt_path=system_prompt_path,
+            )
+
+            with patch("jean_claude.chat.session.Path.cwd", return_value=base_path):
+                response = session.ask("Please review @notes.md, then summarize it.")
+
+        self.assertEqual(response, "First reply")
+        self.assertIn("[Included markdown file: notes.md]", client.calls[0]["prompt"])
+        self.assertIn("# Notes\n\nUse the latest draft.", client.calls[0]["prompt"])
+        self.assertNotIn("Please review @notes.md", client.calls[0]["prompt"])
+        self.assertIn("[Included markdown file: notes.md]", session.messages[0].content)
+
+    def test_chat_session_leaves_missing_markdown_reference_unchanged(self) -> None:
+        client = RecordingLLMClient(["First reply"])
+
+        with TemporaryDirectory() as temp_dir:
+            system_prompt_path = Path(temp_dir) / "system.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+
+            session = ChatSession(
+                client=client,
+                model="recording-v1",
+                system_prompt_path=system_prompt_path,
+            )
+
+            with patch("jean_claude.chat.session.Path.cwd", return_value=Path(temp_dir)):
+                session.ask("Maybe @alias.md is just a handle.")
+
+        self.assertIn("# Latest User Message\n\nMaybe @alias.md is just a handle.", client.calls[0]["prompt"])
+        self.assertNotIn("[Included markdown file:", client.calls[0]["prompt"])
+
+    def test_chat_session_expands_multiple_markdown_file_references(self) -> None:
+        client = RecordingLLMClient(["First reply"])
+
+        with TemporaryDirectory() as temp_dir:
+            base_path = Path(temp_dir)
+            system_prompt_path = base_path / "system.md"
+            first_path = base_path / "one.md"
+            second_path = base_path / "two.md"
+            system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
+            first_path.write_text("# One\n\nAlpha", encoding="utf-8")
+            second_path.write_text("# Two\n\nBeta", encoding="utf-8")
+
+            session = ChatSession(
+                client=client,
+                model="recording-v1",
+                system_prompt_path=system_prompt_path,
+            )
+
+            with patch("jean_claude.chat.session.Path.cwd", return_value=base_path):
+                session.ask("Compare @one.md with @two.md.")
+
+        self.assertIn("[Included markdown file: one.md]", client.calls[0]["prompt"])
+        self.assertIn("# One\n\nAlpha", client.calls[0]["prompt"])
+        self.assertIn("[Included markdown file: two.md]", client.calls[0]["prompt"])
+        self.assertIn("# Two\n\nBeta", client.calls[0]["prompt"])
 
 
 if __name__ == "__main__":

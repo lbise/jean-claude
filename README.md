@@ -54,6 +54,7 @@ jc chat --provider openai-codex --model gpt-5.3-codex --system-prompt-file promp
 
 ```bash
 jc chat --provider mock --message "Help me draft a release note"
+jc chat --provider mock --message "Summarize @README.md"
 ```
 
 ## Chat Behavior
@@ -61,6 +62,7 @@ jc chat --provider mock --message "Help me draft a release note"
 - Jean-Claude keeps recent turns in memory and appends them to each new prompt.
 - The system prompt is read from a Markdown file and sent in full on every request.
 - The system prompt file is re-read on each turn, so you can edit it while chat is running.
+- Mention `@file.md` in a chat message to inline that Markdown file's contents; if the file cannot be found, the text stays unchanged.
 
 ## Commands
 

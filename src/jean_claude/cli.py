@@ -232,7 +232,7 @@ def _run_chat(args: argparse.Namespace) -> int:
         print(f"Jean-Claude: {response}")
         return 0
 
-    print("Jean-Claude: Chat mode is on. Type /exit to quit, /system to show the active system prompt file.")
+    print("Jean-Claude: Chat mode is on. Type /exit to quit, /system to show the active system prompt file, or @file.md to inline a Markdown file.")
     while True:
         try:
             user_message = input("You: ").strip()
@@ -248,7 +248,7 @@ def _run_chat(args: argparse.Namespace) -> int:
             print("Jean-Claude: Talk soon.")
             break
         if command in {"/help", "?"}:
-            print("Jean-Claude: Commands: /exit, /system")
+            print("Jean-Claude: Commands: /exit, /system. Use @file.md to inline a Markdown file when it exists.")
             continue
         if command == "/system":
             print(f"Jean-Claude: Using system prompt file {session.system_prompt_path}")

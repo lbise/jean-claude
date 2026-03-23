@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from jean_claude.config import default_system_prompt_path
 from jean_claude.errors import JeanClaudeError
 from jean_claude.llm.base import DebugHook, LLMClient
+
+
+MARKDOWN_FILE_REFERENCE_PATTERN = re.compile(r"(?<![\w@])@(?P<path>[^\s@]+?\.md)\b", re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -40,6 +44,7 @@ class ChatSession:
         text = user_message.strip()
         if not text:
             raise ValueError("user_message must not be empty")
+        text = _expand_markdown_file_references(text)
 
         if not self._started:
             self.start()
@@ -90,3 +95,34 @@ class ChatSession:
         if not text.strip():
             raise JeanClaudeError(f"System prompt file '{self.system_prompt_path}' is empty")
         return text
+
+
+def _expand_markdown_file_references(text: str) -> str:
+    return MARKDOWN_FILE_REFERENCE_PATTERN.sub(_replace_markdown_file_reference, text)
+
+
+def _replace_markdown_file_reference(match: re.Match[str]) -> str:
+    raw_reference = match.group(0)
+    raw_path = match.group("path")
+    candidate_path = Path(raw_path).expanduser()
+
+    try:
+        if not candidate_path.is_absolute():
+            candidate_path = Path.cwd() / candidate_path
+        resolved_path = candidate_path.resolve()
+    except OSError:
+        return raw_reference
+
+    if not resolved_path.is_file() or resolved_path.suffix.casefold() != ".md":
+        return raw_reference
+
+    try:
+        content = resolved_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return raw_reference
+
+    return _render_markdown_file_reference(raw_path, content)
+
+
+def _render_markdown_file_reference(path: str, content: str) -> str:
+    return f"[Included markdown file: {path}]\n{content}\n[/Included markdown file]"
