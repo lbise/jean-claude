@@ -1,4 +1,4 @@
-# 🧾 DEVIS
+# DEVIS
 
 **Nom de l’entreprise :** [Nom de votre entreprise]
 **Adresse :** [Rue, NPA, Ville, Suisse]
@@ -9,7 +9,7 @@
 
 ---
 
-## 📅 Informations du devis
+## Informations du devis
 
 - **Numéro de devis :** [DEVIS-XXXX]
 - **Date :** [JJ/MM/AAAA]
@@ -17,7 +17,7 @@
 
 ---
 
-## 👤 Informations client
+## Informations client
 
 **Nom :** [Nom du client]
 **Adresse :** [Rue, NPA, Ville]
@@ -26,7 +26,7 @@
 
 ---
 
-## 🏠 Description des travaux
+## Description des travaux
 
 **Lieu d’intervention :** [Adresse du chantier]
 
@@ -41,7 +41,7 @@
 
 ---
 
-## 📐 Détail des surfaces
+## Détail des surfaces
 
 | Zone              | Surface (m²) | Remarques |
 | ----------------- | ------------ | --------- |
@@ -52,7 +52,7 @@
 
 ---
 
-## 💰 Détail des prix
+## Détail des prix
 
 | Désignation                 | Quantité | Prix unitaire (CHF) | Total (CHF) |
 | --------------------------- | -------- | ------------------- | ----------- |
@@ -63,7 +63,7 @@
 
 ---
 
-## 💵 Récapitulatif
+## Récapitulatif
 
 - **Sous-total (HT) :** CHF [Montant]
 - **TVA (8.1%) :** CHF [Montant] _(si assujetti)_
@@ -76,14 +76,14 @@
 
 ---
 
-## ⏳ Délais
+## Délais
 
 - **Date de début :** [JJ/MM/AAAA]
 - **Durée estimée :** [X jours ouvrables]
 
 ---
 
-## 📌 Conditions générales
+## Conditions générales
 
 - Devis valable jusqu’au **[date]**
 - Acompte de **[X]%** à la commande
@@ -95,13 +95,13 @@
 
 ---
 
-## ⚖️ For juridique
+## For juridique
 
 Le for juridique est situé à **[Ville / Canton]**, Suisse.
 
 ---
 
-## ✍️ Acceptation du devis
+## Acceptation du devis
 
 Le client confirme l’acceptation du présent devis et des conditions ci-dessus.
 
@@ -117,4 +117,4 @@ Le client confirme l’acceptation du présent devis et des conditions ci-dessus
 
 ---
 
-_Merci pour votre confiance !_ 🎨
+_Merci pour votre confiance !_
