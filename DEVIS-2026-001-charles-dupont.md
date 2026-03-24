@@ -1,45 +1,28 @@
-::: {.quote-hero}
-::: {.quote-brand}
-::: {.quote-brand-mark}
+::: {.quote-header}
 ![Logo de l'entreprise](quote-logo.svg){.quote-logo}
-:::
 
-::: {.quote-brand-copy}
 # DEVIS
 
-**Atelier Couleurs Alpines Sarl**
-
-Peinture intérieure, rénovation et finitions soignées
+**Atelier Couleurs Alpines Sarl**  
+Rue des Artisans 12, 1003 Lausanne, Suisse  
+**Téléphone :** +41 21 555 12 34 - **Email :** contact@couleurs-alpines.test  
+**N° IDE :** CHE-123.456.789  
+**N° TVA :** CHE-123.456.789 TVA
 :::
-:::
 
-::: {.quote-meta}
-**Informations du devis**
+## Informations du devis {.quote-meta}
 
 - **Numéro de devis :** DEVIS-2026-001
 - **Date d'émission :** 23/03/2026
 - **Validité :** 22/04/2026
 - **Lieu d'intervention :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
-:::
-:::
 
-::: {.quote-grid}
-## Coordonnées entreprise {.quote-card}
-
-- **Entreprise :** Atelier Couleurs Alpines Sarl
-- **Adresse :** Rue des Artisans 12, 1003 Lausanne, Suisse
-- **Téléphone :** +41 21 555 12 34
-- **Email :** contact@couleurs-alpines.test
-- **N° IDE :** CHE-123.456.789
-- **N° TVA :** CHE-123.456.789 TVA
-
-## Coordonnées client {.quote-card}
+## Informations client {.quote-meta}
 
 - **Nom :** Monsieur Charles Dupont
 - **Adresse :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
 - **Téléphone :** Non communiqué
 - **Email :** Non communiqué
-:::
 
 ## Description des travaux
 
@@ -79,20 +62,18 @@ Peinture intérieure, rénovation et finitions soignées
 >
 > - TVA incluse, entreprise assujettie à la TVA
 
-::: {.quote-grid}
-## Délais {.quote-card}
+## Délais {.quote-meta}
 
 - **Date de début :** À convenir après acceptation du devis
 - **Durée estimée :** 4 jours ouvrables
 
-## Conditions de paiement {.quote-card}
+## Conditions de paiement {.quote-meta}
 
 - **Acompte demandé :** 30% à la commande
 - **Solde payable :** 30 jours net
 - **Mode de paiement :** virement bancaire
 - **IBAN :** CH00 1234 5678 9012 3456 7
 - **Banque :** Banque Horizon Suisse
-:::
 
 ## Conditions générales
 
@@ -109,13 +90,13 @@ Le for juridique est situé à **Lausanne / Vaud**, Suisse.
 
 Le client confirme l'acceptation du présent devis et des conditions ci-dessus.
 
-**Nom du client :**
+**Nom du client :** ____________________
 
-**Signature :**
+**Signature :** ____________________
 
-**Date :**
+**Date :** ____________________
 
-**Signature de l'entreprise :**
+**Signature de l'entreprise :** ____________________
 
 ::: {.quote-thanks}
 _Merci pour votre confiance !_

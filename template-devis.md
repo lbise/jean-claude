@@ -1,45 +1,28 @@
-::: {.quote-hero}
-::: {.quote-brand}
-::: {.quote-brand-mark}
+::: {.quote-header}
 ![Logo de l'entreprise](quote-logo.svg){.quote-logo}
-:::
 
-::: {.quote-brand-copy}
 # DEVIS
 
-**[Nom de votre entreprise]**
-
-[Votre specialite ou slogan]
+**[Nom de votre entreprise]**  
+[Rue, NPA, Ville, Suisse]  
+**Téléphone :** [Numéro de téléphone] - **Email :** [Adresse email]  
+**N° IDE :** [CHE-XXX.XXX.XXX]  
+**N° TVA :** [CHE-XXX.XXX.XXX TVA]
 :::
-:::
 
-::: {.quote-meta}
-**Informations du devis**
+## Informations du devis {.quote-meta}
 
 - **Numéro de devis :** [DEVIS-XXXX]
 - **Date d'émission :** [JJ/MM/AAAA]
 - **Validité :** [JJ/MM/AAAA]
 - **Lieu d'intervention :** [Adresse du chantier]
-:::
-:::
 
-::: {.quote-grid}
-## Coordonnées entreprise {.quote-card}
-
-- **Entreprise :** [Nom de votre entreprise]
-- **Adresse :** [Rue, NPA, Ville, Suisse]
-- **Téléphone :** [Numéro de téléphone]
-- **Email :** [Adresse email]
-- **N° IDE :** [CHE-XXX.XXX.XXX]
-- **N° TVA :** [CHE-XXX.XXX.XXX TVA]
-
-## Coordonnées client {.quote-card}
+## Informations client {.quote-meta}
 
 - **Nom :** [Nom du client]
 - **Adresse :** [Rue, NPA, Ville]
 - **Téléphone :** [Téléphone]
 - **Email :** [Email]
-:::
 
 ## Description des travaux
 
@@ -81,20 +64,18 @@
 > - TVA incluse si votre entreprise est assujettie
 > - Si non assujetti : **"Non assujetti à la TVA selon l'art. 10 LTVA"**
 
-::: {.quote-grid}
-## Délais {.quote-card}
+## Délais {.quote-meta}
 
 - **Date de début :** [JJ/MM/AAAA]
 - **Durée estimée :** [X jours ouvrables]
 
-## Conditions de paiement {.quote-card}
+## Conditions de paiement {.quote-meta}
 
 - **Acompte demandé :** [X]% à la commande
 - **Solde payable :** [X] jours net
 - **Mode de paiement :** [virement bancaire / TWINT / espèces]
 - **IBAN :** [CHXX XXXX XXXX XXXX XXXX X]
 - **Banque :** [Nom de la banque]
-:::
 
 ## Conditions générales
 
@@ -111,13 +92,13 @@ Le for juridique est situé à **[Ville / Canton]**, Suisse.
 
 Le client confirme l'acceptation du présent devis et des conditions ci-dessus.
 
-**Nom du client :**
+**Nom du client :** ____________________
 
-**Signature :**
+**Signature :** ____________________
 
-**Date :**
+**Date :** ____________________
 
-**Signature de l'entreprise :**
+**Signature de l'entreprise :** ____________________
 
 ::: {.quote-thanks}
 _Merci pour votre confiance !_
