@@ -1,43 +1,83 @@
+:root {
+  --paper: #fffdf9;
+  --panel: #f7f3ee;
+  --ink: #203241;
+  --muted: #667788;
+  --line: #d7dee4;
+  --brand: #27465f;
+  --brand-deep: #17324a;
+  --accent: #cb8743;
+  --accent-soft: #f4e7d7;
+}
+
 @page {
   size: A4;
-  margin: 18mm 16mm 18mm 16mm;
+  margin: 15mm 14mm 18mm 14mm;
+
+  @bottom-left {
+    content: "Proposition commerciale";
+    font-family: "Source Sans 3", "Lato", "DejaVu Sans", sans-serif;
+    font-size: 8pt;
+    letter-spacing: 0.08em;
+    color: #728394;
+  }
+
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: "Source Sans 3", "Lato", "DejaVu Sans", sans-serif;
+    font-size: 8pt;
+    color: #728394;
+  }
 }
 
 html {
-  font-size: 11pt;
+  font-size: 10.5pt;
+  background: #f3eee8;
 }
 
 body {
-  font-family: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
-  line-height: 1.45;
-  color: #1f2933;
-  background: #ffffff;
+  margin: 0;
+  max-width: none;
+  padding: 0;
+  font-family: "Source Sans 3", "Lato", "DejaVu Sans", sans-serif;
+  line-height: 1.55;
+  color: var(--ink);
+  background: transparent;
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
 }
 
 h1,
 h2,
 h3 {
   page-break-after: avoid;
-  color: #102a43;
-  font-weight: 700;
+  color: var(--brand-deep);
+  font-family: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "DejaVu Serif", serif;
+  font-weight: 600;
 }
 
 h1 {
-  margin: 0 0 14pt;
-  padding-bottom: 8pt;
-  font-size: 22pt;
-  letter-spacing: 0.05em;
+  margin: 0 0 8pt;
+  font-size: 25pt;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  border-bottom: 2px solid #bcccdc;
 }
 
 h2 {
-  margin: 20pt 0 8pt;
-  padding: 4pt 0;
-  font-size: 11.5pt;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 1px solid #d9e2ec;
+  margin: 0 0 12pt;
+  padding-bottom: 8pt;
+  font-size: 15pt;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--line);
+}
+
+h3 {
+  margin: 0 0 8pt;
+  font-size: 12pt;
 }
 
 p,
@@ -59,62 +99,11 @@ li {
 }
 
 strong {
-  color: #102a43;
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid #d9e2ec;
-  margin: 14pt 0;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9.5pt;
-  page-break-inside: avoid;
-}
-
-thead {
-  display: table-header-group;
-}
-
-tr {
-  page-break-inside: avoid;
-}
-
-th,
-td {
-  padding: 7pt 8pt;
-  border: 1px solid #d9e2ec;
-  vertical-align: top;
-}
-
-th {
-  background: #eef4f8;
-  color: #102a43;
-  text-align: left;
-  font-weight: 700;
-}
-
-tbody tr:nth-child(even) {
-  background: #f8fbfd;
-}
-
-blockquote {
-  padding: 8pt 10pt;
-  border-left: 3px solid #7b8794;
-  background: #f7f9fb;
-  color: #486581;
-}
-
-code {
-  font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
-  font-size: 0.95em;
+  color: var(--brand-deep);
 }
 
 em {
-  color: #52606d;
+  color: var(--muted);
 }
 
 a {
@@ -122,7 +111,388 @@ a {
   text-decoration: none;
 }
 
-p + p strong:first-child {
+hr {
+  display: none;
+}
+
+blockquote {
+  padding: 12pt 14pt;
+  border-left: 4px solid var(--accent);
+  border-radius: 14pt;
+  background: var(--accent-soft);
+  color: #4e5e6d;
+}
+
+code {
+  font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 0.92em;
+}
+
+tr {
+  page-break-inside: avoid;
+}
+
+table {
+  width: 100%;
+  display: table;
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 9.5pt;
+  border: 1px solid var(--line);
+  border-radius: 16pt;
+  background: var(--paper);
+}
+
+thead {
+  display: table-header-group;
+}
+
+th,
+td {
+  padding: 8pt 10pt;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  background: var(--brand-deep);
+  color: #ffffff;
+  text-align: left;
+  font-size: 8.2pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+th:first-child {
+  border-top-left-radius: 15pt;
+}
+
+th:last-child {
+  border-top-right-radius: 15pt;
+}
+
+tbody tr:nth-child(even) td {
+  background: #fbf7f2;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+body > section.level1 {
+  position: relative;
+}
+
+.quote-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16pt;
+  margin: 0 0 16pt;
+  padding: 20pt 22pt;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24pt;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 34%),
+    linear-gradient(135deg, #17324a 0%, #214a63 55%, #2f627b 100%);
+  color: #ffffff;
+  page-break-inside: avoid;
+}
+
+.quote-brand {
+  display: flex;
+  gap: 14pt;
+  flex: 1 1 60%;
+}
+
+.quote-brand-mark,
+.quote-brand-mark p,
+.quote-brand-mark figure {
+  margin: 0;
+}
+
+.quote-brand-mark figcaption {
+  display: none;
+}
+
+.quote-logo {
+  display: block;
+  width: 58pt;
+  height: auto;
+}
+
+.quote-brand-copy {
+  flex: 1 1 auto;
+}
+
+.quote-brand-copy h1,
+.quote-brand-copy strong,
+.quote-meta strong {
+  color: #ffffff;
+}
+
+.quote-brand-copy p {
+  margin: 0;
+}
+
+.quote-brand-copy p:first-of-type {
+  margin-bottom: 4pt;
+  font-size: 14pt;
+  letter-spacing: 0.02em;
+}
+
+.quote-brand-copy p:last-of-type {
+  max-width: 290pt;
+  font-size: 9.4pt;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.quote-meta {
+  flex: 0 0 220pt;
+  padding: 14pt 16pt;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18pt;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.quote-meta > p:first-child {
+  margin: 0 0 10pt;
+  font-size: 8.6pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.quote-meta ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quote-meta li {
+  margin: 0;
+  padding: 7pt 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.quote-meta li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.quote-meta li:last-child {
+  padding-bottom: 0;
+}
+
+.quote-meta li strong {
+  display: block;
+  margin-bottom: 2pt;
+  font-size: 8.1pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.quote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14pt;
+  margin: 0 0 14pt;
+}
+
+.quote-grid > section.level2 {
+  flex: 1 1 240pt;
+  margin: 0;
+}
+
+section.level2 {
+  margin: 0 0 14pt;
+  padding: 16pt 18pt 18pt;
+  border: 1px solid var(--line);
+  border-radius: 18pt;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--panel) 100%);
+}
+
+section.quote-card,
+section.quote-summary,
+section.quote-signatures {
+  page-break-inside: avoid;
+}
+
+section.quote-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+section.quote-card li {
+  margin: 0;
+  padding: 7pt 0;
+  border-top: 1px solid var(--line);
+}
+
+section.quote-card li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+section.quote-card li:last-child {
+  padding-bottom: 0;
+}
+
+section.quote-card li strong {
+  display: block;
+  margin-bottom: 2pt;
+  font-size: 8.1pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+section[id*="surface"] table th:nth-child(2),
+section[id*="surface"] table td:nth-child(2) {
+  text-align: center;
+}
+
+section[id*="prix"] table th:nth-child(2),
+section[id*="prix"] table td:nth-child(2) {
+  text-align: center;
+}
+
+section[id*="prix"] table th:nth-child(3),
+section[id*="prix"] table td:nth-child(3),
+section[id*="prix"] table th:nth-child(4),
+section[id*="prix"] table td:nth-child(4) {
+  text-align: right;
+}
+
+section.quote-summary {
+  background: linear-gradient(160deg, #17324a 0%, #234c65 58%, #2f617a 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+section.quote-summary > h2,
+section.quote-summary strong,
+section.quote-summary em {
+  color: #ffffff;
+}
+
+section.quote-summary > h2 {
+  border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+
+section.quote-summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10pt;
+  margin: 0 0 12pt;
+  padding: 0;
+  list-style: none;
+}
+
+section.quote-summary li {
+  flex: 1 1 160pt;
+  margin: 0;
+  padding: 12pt 14pt;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14pt;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+section.quote-summary li strong {
+  display: block;
+  margin-bottom: 6pt;
+  font-size: 8.2pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+section.quote-summary li:last-child {
+  background: linear-gradient(180deg, rgba(203, 135, 67, 0.28), rgba(203, 135, 67, 0.16));
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+section.quote-summary blockquote {
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: #f0c48c;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+section.quote-signatures > p:first-of-type {
+  margin-bottom: 14pt;
+}
+
+section.quote-signatures > p:not(:first-of-type) {
   display: inline-block;
-  min-width: 160pt;
+  width: calc(50% - 8pt);
+  min-height: 60pt;
+  margin: 0 12pt 10pt 0;
+  padding-top: 10pt;
+  border-bottom: 1px solid var(--brand-deep);
+  vertical-align: top;
+}
+
+section.quote-signatures > p:last-of-type {
+  width: 100%;
+  margin-right: 0;
+}
+
+section.quote-signatures > p:not(:first-of-type) strong {
+  display: block;
+  margin-bottom: 24pt;
+  font-size: 8.2pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+body > section.level1 > p:first-of-type,
+section[id*="client"] > p:first-of-type {
+  white-space: pre-line;
+}
+
+body > section.level1 > p:first-of-type strong,
+section[id*="client"] > p:first-of-type strong {
+  display: inline-block;
+  min-width: 118pt;
+  margin-right: 4pt;
+}
+
+body > section.level1 > p:last-child {
+  margin-top: 4pt;
+  text-align: right;
+  font-family: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "DejaVu Serif", serif;
+  font-size: 13pt;
+  color: var(--brand-deep);
+}
+
+body > section.level1 > p:last-child em {
+  font-style: normal;
+  color: inherit;
+}
+
+.quote-thanks {
+  margin-top: 6pt;
+  text-align: right;
+  font-family: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "DejaVu Serif", serif;
+  font-size: 13pt;
+  color: var(--brand-deep);
+}
+
+.quote-thanks p {
+  margin: 0;
+}
+
+.quote-thanks em {
+  font-style: normal;
+  color: inherit;
 }

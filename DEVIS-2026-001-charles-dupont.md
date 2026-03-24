@@ -1,34 +1,47 @@
+::: {.quote-hero}
+::: {.quote-brand}
+::: {.quote-brand-mark}
+![Logo de l'entreprise](quote-logo.svg){.quote-logo}
+:::
+
+::: {.quote-brand-copy}
 # DEVIS
 
-**Nom de l’entreprise :** Atelier Couleurs Alpines Sarl
-**Adresse :** Rue des Artisans 12, 1003 Lausanne, Suisse
-**Téléphone :** +41 21 555 12 34
-**Email :** contact@couleurs-alpines.test
-**N° IDE :** CHE-123.456.789
-**N° TVA :** CHE-123.456.789 TVA
+**Atelier Couleurs Alpines Sarl**
 
----
+Peinture intérieure, rénovation et finitions soignées
+:::
+:::
 
-## Informations du devis
+::: {.quote-meta}
+**Informations du devis**
 
 - **Numéro de devis :** DEVIS-2026-001
-- **Date :** 23/03/2026
-- **Validité du devis :** 22/04/2026
+- **Date d'émission :** 23/03/2026
+- **Validité :** 22/04/2026
+- **Lieu d'intervention :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
+:::
+:::
 
----
+::: {.quote-grid}
+## Coordonnées entreprise {.quote-card}
 
-## Informations client
+- **Entreprise :** Atelier Couleurs Alpines Sarl
+- **Adresse :** Rue des Artisans 12, 1003 Lausanne, Suisse
+- **Téléphone :** +41 21 555 12 34
+- **Email :** contact@couleurs-alpines.test
+- **N° IDE :** CHE-123.456.789
+- **N° TVA :** CHE-123.456.789 TVA
 
-**Nom :** Monsieur Charles Dupont
-**Adresse :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
-**Téléphone :** Non communiqué
-**Email :** Non communiqué
+## Coordonnées client {.quote-card}
 
----
+- **Nom :** Monsieur Charles Dupont
+- **Adresse :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
+- **Téléphone :** Non communiqué
+- **Email :** Non communiqué
+:::
 
 ## Description des travaux
-
-**Lieu d’intervention :** Rue Dufour 33, 2666 Chalembourg-en-Bresse
 
 **Détail des prestations :**
 
@@ -39,8 +52,6 @@
 - Finition : satinée
 - Travaux complémentaires : aucune réparation lourde incluse ; calcul basé sur une hauteur sous plafond standard estimée à 2,5 m
 
----
-
 ## Détail des surfaces
 
 | Zone              | Surface (m²) | Remarques |
@@ -50,19 +61,15 @@
 | Portes / Fenêtres | 0            | Non chiffrés séparément |
 | Autres            | 0            | Aucun travail complémentaire prévu |
 
----
-
 ## Détail des prix
 
-| Désignation                           | Quantité | Prix unitaire (CHF) | Total (CHF) |
-| ------------------------------------- | -------- | ------------------- | ----------- |
-| Peinture murs (2 couches)             | 150 m²   | 24.00               | 3'600.00    |
-| Peinture plafonds (2 couches)         | 74 m²    | 29.00               | 2'146.00    |
-| Déplacement                           | 1 forfait | 45.00               | 45.00       |
+| Désignation                   | Quantité   | Prix unitaire (CHF) | Total (CHF) |
+| ----------------------------- | ---------- | ------------------- | ----------- |
+| Peinture murs (2 couches)     | 150 m²     | 24.00               | 3'600.00    |
+| Peinture plafonds (2 couches) | 74 m²      | 29.00               | 2'146.00    |
+| Déplacement                   | 1 forfait  | 45.00               | 45.00       |
 
----
-
-## Récapitulatif
+## Récapitulatif {.quote-summary}
 
 - **Sous-total (HT) :** CHF 5'791.00
 - **TVA (8.1%) :** CHF 469.07
@@ -72,48 +79,44 @@
 >
 > - TVA incluse, entreprise assujettie à la TVA
 
----
-
-## Délais
+::: {.quote-grid}
+## Délais {.quote-card}
 
 - **Date de début :** À convenir après acceptation du devis
 - **Durée estimée :** 4 jours ouvrables
 
----
+## Conditions de paiement {.quote-card}
+
+- **Acompte demandé :** 30% à la commande
+- **Solde payable :** 30 jours net
+- **Mode de paiement :** virement bancaire
+- **IBAN :** CH00 1234 5678 9012 3456 7
+- **Banque :** Banque Horizon Suisse
+:::
 
 ## Conditions générales
 
-- Devis valable jusqu’au **22/04/2026**
-- Acompte de **30%** à la commande
-- Solde payable à **30 jours net**
-- Paiement par : virement bancaire
-- Coordonnées bancaires (IBAN) : CH00 1234 5678 9012 3456 7
-- Banque : Banque Horizon Suisse
-- Tout travail supplémentaire fera l’objet d’un devis complémentaire
+- Devis valable jusqu'au **22/04/2026**
+- Les prix comprennent la préparation standard des supports décrite ci-dessus
+- Tout travail supplémentaire fera l'objet d'un devis complémentaire
 - Les prix sont exprimés en CHF, hors prestations non mentionnées
-
----
 
 ## For juridique
 
 Le for juridique est situé à **Lausanne / Vaud**, Suisse.
 
----
+## Acceptation du devis {.quote-signatures}
 
-## Acceptation du devis
+Le client confirme l'acceptation du présent devis et des conditions ci-dessus.
 
-Le client confirme l’acceptation du présent devis et des conditions ci-dessus.
+**Nom du client :**
 
-**Nom du client :** ____________________
+**Signature :**
 
-**Signature :** ____________________
+**Date :**
 
-**Date :** ____________________
+**Signature de l'entreprise :**
 
----
-
-**Signature de l’entreprise :** ____________________
-
----
-
+::: {.quote-thanks}
 _Merci pour votre confiance !_
+:::

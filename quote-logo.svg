@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title desc">
+  <title id="title">Logo devis</title>
+  <desc id="desc">Embleme geometrique pour les devis de peinture et renovation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="18" y1="18" x2="162" y2="162" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#204560"/>
+      <stop offset="1" stop-color="#16324a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="46" y1="46" x2="142" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e1a05d"/>
+      <stop offset="1" stop-color="#c98039"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="10" y="10" width="160" height="160" rx="38" fill="url(#bg)"/>
+  <path d="M44 112 90 63l46 49" fill="none" stroke="#f8f4ef" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
+  <path d="M58 117h64" fill="none" stroke="#f8f4ef" stroke-linecap="round" stroke-width="10"/>
+  <path d="M46 89c17-4 31-11 43-21 12-10 24-18 42-24 6-2 11 1 13 6 2 6-1 12-7 15-19 7-31 15-42 24-13 11-29 19-48 23" fill="none" stroke="url(#accent)" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/>
+  <circle cx="132" cy="48" r="7" fill="#f3dfc6"/>
+  <circle cx="146" cy="62" r="4" fill="#f3dfc6" opacity="0.85"/>
+</svg>

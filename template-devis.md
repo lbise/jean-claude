@@ -1,34 +1,47 @@
+::: {.quote-hero}
+::: {.quote-brand}
+::: {.quote-brand-mark}
+![Logo de l'entreprise](quote-logo.svg){.quote-logo}
+:::
+
+::: {.quote-brand-copy}
 # DEVIS
 
-**Nom de l’entreprise :** [Nom de votre entreprise]
-**Adresse :** [Rue, NPA, Ville, Suisse]
-**Téléphone :** [Numéro de téléphone]
-**Email :** [Adresse email]
-**N° IDE :** [CHE-XXX.XXX.XXX]
-**N° TVA :** [CHE-XXX.XXX.XXX TVA]
+**[Nom de votre entreprise]**
 
----
+[Votre specialite ou slogan]
+:::
+:::
 
-## Informations du devis
+::: {.quote-meta}
+**Informations du devis**
 
 - **Numéro de devis :** [DEVIS-XXXX]
-- **Date :** [JJ/MM/AAAA]
-- **Validité du devis :** [JJ/MM/AAAA]
+- **Date d'émission :** [JJ/MM/AAAA]
+- **Validité :** [JJ/MM/AAAA]
+- **Lieu d'intervention :** [Adresse du chantier]
+:::
+:::
 
----
+::: {.quote-grid}
+## Coordonnées entreprise {.quote-card}
 
-## Informations client
+- **Entreprise :** [Nom de votre entreprise]
+- **Adresse :** [Rue, NPA, Ville, Suisse]
+- **Téléphone :** [Numéro de téléphone]
+- **Email :** [Adresse email]
+- **N° IDE :** [CHE-XXX.XXX.XXX]
+- **N° TVA :** [CHE-XXX.XXX.XXX TVA]
 
-**Nom :** [Nom du client]
-**Adresse :** [Rue, NPA, Ville]
-**Téléphone :** [Téléphone]
-**Email :** [Email]
+## Coordonnées client {.quote-card}
 
----
+- **Nom :** [Nom du client]
+- **Adresse :** [Rue, NPA, Ville]
+- **Téléphone :** [Téléphone]
+- **Email :** [Email]
+:::
 
 ## Description des travaux
-
-**Lieu d’intervention :** [Adresse du chantier]
 
 **Détail des prestations :**
 
@@ -39,8 +52,6 @@
 - Finition : [mat, satiné, brillant]
 - Travaux complémentaires : [détails]
 
----
-
 ## Détail des surfaces
 
 | Zone              | Surface (m²) | Remarques |
@@ -50,20 +61,16 @@
 | Portes / Fenêtres | [XX]         | [détails] |
 | Autres            | [XX]         | [détails] |
 
----
-
 ## Détail des prix
 
 | Désignation                 | Quantité | Prix unitaire (CHF) | Total (CHF) |
 | --------------------------- | -------- | ------------------- | ----------- |
-| Main d’œuvre                | [X]      | [CHF]               | [CHF]       |
+| Main d'oeuvre               | [X]      | [CHF]               | [CHF]       |
 | Fournitures                 | [X]      | [CHF]               | [CHF]       |
 | Travaux préparatoires       | [X]      | [CHF]               | [CHF]       |
 | Prestations supplémentaires | [X]      | [CHF]               | [CHF]       |
 
----
-
-## Récapitulatif
+## Récapitulatif {.quote-summary}
 
 - **Sous-total (HT) :** CHF [Montant]
 - **TVA (8.1%) :** CHF [Montant] _(si assujetti)_
@@ -72,49 +79,46 @@
 > _Mention obligatoire :_
 >
 > - TVA incluse si votre entreprise est assujettie
-> - Si non assujetti : **"Non assujetti à la TVA selon l’art. 10 LTVA"**
+> - Si non assujetti : **"Non assujetti à la TVA selon l'art. 10 LTVA"**
 
----
-
-## Délais
+::: {.quote-grid}
+## Délais {.quote-card}
 
 - **Date de début :** [JJ/MM/AAAA]
 - **Durée estimée :** [X jours ouvrables]
 
----
+## Conditions de paiement {.quote-card}
+
+- **Acompte demandé :** [X]% à la commande
+- **Solde payable :** [X] jours net
+- **Mode de paiement :** [virement bancaire / TWINT / espèces]
+- **IBAN :** [CHXX XXXX XXXX XXXX XXXX X]
+- **Banque :** [Nom de la banque]
+:::
 
 ## Conditions générales
 
-- Devis valable jusqu’au **[date]**
-- Acompte de **[X]%** à la commande
-- Solde payable à **[X] jours net**
-- Paiement par : [virement bancaire / TWINT / espèces]
-- Coordonnées bancaires (IBAN) : [CHXX XXXX XXXX XXXX XXXX X]
-- Tout travail supplémentaire fera l’objet d’un devis complémentaire
+- Devis valable jusqu'au **[date]**
 - Les prix sont exprimés en francs suisses (CHF)
-
----
+- Tout travail supplémentaire fera l'objet d'un devis complémentaire
+- Les prestations non mentionnées explicitement sont exclues du présent devis
 
 ## For juridique
 
 Le for juridique est situé à **[Ville / Canton]**, Suisse.
 
----
+## Acceptation du devis {.quote-signatures}
 
-## Acceptation du devis
+Le client confirme l'acceptation du présent devis et des conditions ci-dessus.
 
-Le client confirme l’acceptation du présent devis et des conditions ci-dessus.
+**Nom du client :**
 
-**Nom du client :** **********\_\_\_**********
+**Signature :**
 
-**Signature :** **********\_\_\_**********
+**Date :**
 
-**Date :** **********\_\_\_**********
+**Signature de l'entreprise :**
 
----
-
-**Signature de l’entreprise :** **********\_\_\_**********
-
----
-
+::: {.quote-thanks}
 _Merci pour votre confiance !_
+:::

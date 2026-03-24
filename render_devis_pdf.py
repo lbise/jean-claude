@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_CSS = ROOT / "devis.css"
+DEFAULT_TEMPLATE = ROOT / "devis.template.html"
 
 
 def find_executable(name: str) -> str | None:
@@ -42,6 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"CSS file to apply when rendering with HTML-based engines (default: {DEFAULT_CSS.name})",
     )
     parser.add_argument(
+        "--template",
+        default=str(DEFAULT_TEMPLATE),
+        help=f"Pandoc HTML template to use (default: {DEFAULT_TEMPLATE.name})",
+    )
+    parser.add_argument(
         "--pdf-engine",
         default="weasyprint",
         help="Pandoc PDF engine to use (default: weasyprint)",
@@ -57,6 +63,17 @@ def build_parser() -> argparse.ArgumentParser:
 def fail(message: str) -> int:
     print(f"Error: {message}", file=sys.stderr)
     return 1
+
+
+def build_resource_path(*paths: Path | None) -> str:
+    ordered_paths: list[str] = []
+    for path in paths:
+        if path is None:
+            continue
+        resolved = str(path.expanduser().resolve())
+        if resolved not in ordered_paths:
+            ordered_paths.append(resolved)
+    return os.pathsep.join(ordered_paths)
 
 
 def main() -> int:
@@ -82,17 +99,29 @@ def main() -> int:
     if css_path and not css_path.is_file():
         return fail(f"CSS file not found: {css_path}")
 
+    template_path = Path(args.template).expanduser().resolve() if args.template else None
+    if template_path and not template_path.is_file():
+        return fail(f"template file not found: {template_path}")
+
     if args.pdf_engine == "weasyprint" and find_executable("weasyprint") is None:
         return fail(
             "weasyprint executable not found. Install it or choose another engine with --pdf-engine."
         )
 
     engine_executable = find_executable(args.pdf_engine) if args.pdf_engine else None
+    resource_path = build_resource_path(
+        input_path.parent,
+        css_path.parent if css_path else None,
+        template_path.parent if template_path else None,
+        ROOT,
+    )
 
     command = [
         args.pandoc,
         str(input_path),
         "--standalone",
+        "--section-divs",
+        f"--resource-path={resource_path}",
         f"--pdf-engine={args.pdf_engine}",
         "-o",
         str(output_path),
@@ -100,6 +129,9 @@ def main() -> int:
 
     if css_path:
         command.extend(["-c", str(css_path)])
+
+    if template_path:
+        command.extend(["--template", str(template_path)])
 
     env = os.environ.copy()
     tool_dirs = []
