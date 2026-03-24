@@ -9,6 +9,52 @@ from unittest.mock import patch
 
 from jean_claude.auth.store import OpenAICodexCredentials
 from jean_claude.cli import build_parser, main
+from jean_claude.llm.base import LLMResult
+
+
+class RecordingLLMClient:
+    def __init__(self, response: str = "Stub reply") -> None:
+        self.response = response
+        self.calls: list[dict[str, str]] = []
+
+    def complete(
+        self,
+        prompt: str,
+        *,
+        model: str | None = None,
+        system_prompt: str | None = None,
+        debug_hook=None,
+    ) -> LLMResult:
+        self.calls.append(
+            {
+                "model": model or "",
+                "prompt": prompt,
+                "system_prompt": system_prompt or "",
+            }
+        )
+        if debug_hook is not None:
+            debug_hook(
+                {
+                    "type": "llm.complete.request",
+                    "provider": "recording",
+                    "model": model or "recording-v1",
+                    "prompt": prompt,
+                    "system_prompt": system_prompt or "",
+                }
+            )
+        result = LLMResult(provider="recording", model=model or "recording-v1", text=self.response)
+        if debug_hook is not None:
+            debug_hook(
+                {
+                    "type": "llm.complete.response",
+                    "provider": result.provider,
+                    "model": result.model,
+                    "text": result.text,
+                    "usage": result.usage,
+                    "raw": result.raw,
+                }
+            )
+        return result
 
 
 class CLITestCase(unittest.TestCase):
@@ -41,99 +87,60 @@ class CLITestCase(unittest.TestCase):
         args = parser.parse_args(["chat", "--system-prompt-file", "prompts/system.md"])
         self.assertEqual(args.system_prompt_file, "prompts/system.md")
 
-    def test_cli_llm_test_mock_json(self) -> None:
-        output = io.StringIO()
-        with redirect_stdout(output):
-            exit_code = main(
-                [
-                    "llm",
-                    "test",
-                    "--provider",
-                    "mock",
-                    "--prompt",
-                    "Find a thriller",
-                    "--json",
-                ]
-            )
-        self.assertEqual(exit_code, 0)
-        self.assertIn('"provider": "mock"', output.getvalue())
-
-    def test_cli_prefs_show_json(self) -> None:
-        output = io.StringIO()
-        with redirect_stdout(output):
-            exit_code = main(["prefs", "show", "--json"])
-        self.assertEqual(exit_code, 0)
-        self.assertIn('"genres_like"', output.getvalue())
-
     def test_cli_chat_one_shot(self) -> None:
         output = io.StringIO()
+        client = RecordingLLMClient(response="Here is a reply")
         with TemporaryDirectory() as temp_dir:
             system_prompt_path = Path(temp_dir) / "system.md"
             system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
-            with redirect_stdout(output):
-                exit_code = main(
-                    [
-                        "chat",
-                        "--provider",
-                        "mock",
-                        "--model",
-                        "mock-v1",
-                        "--message",
-                        "I loved Dune and Arrival",
-                        "--system-prompt-file",
-                        str(system_prompt_path),
-                    ]
-                )
+            with patch("jean_claude.cli._build_llm_client", return_value=client):
+                with redirect_stdout(output):
+                    exit_code = main(
+                        [
+                            "chat",
+                            "--model",
+                            "gpt-5.3-codex",
+                            "--message",
+                            "I loved Dune and Arrival",
+                            "--system-prompt-file",
+                            str(system_prompt_path),
+                        ]
+                    )
         self.assertEqual(exit_code, 0)
-        self.assertIn("Jean-Claude:", output.getvalue())
-
-    def test_cli_llm_debug_logs_to_stderr(self) -> None:
-        output = io.StringIO()
-        debug_output = io.StringIO()
-        with redirect_stdout(output), redirect_stderr(debug_output):
-            exit_code = main(
-                [
-                    "llm",
-                    "test",
-                    "--provider",
-                    "mock",
-                    "--prompt",
-                    "Find a thriller",
-                    "--debug",
-                ]
-            )
-        self.assertEqual(exit_code, 0)
-        self.assertIn("[debug] llm.complete.request", debug_output.getvalue())
-        self.assertIn("[debug] llm.complete.response", debug_output.getvalue())
+        self.assertIn("Jean-Claude: Here is a reply", output.getvalue())
+        self.assertIn("# Latest User Message\n\nI loved Dune and Arrival", client.calls[0]["prompt"])
 
     def test_cli_chat_debug_expands_newlines(self) -> None:
         output = io.StringIO()
         debug_output = io.StringIO()
+        client = RecordingLLMClient(response="hello")
         with TemporaryDirectory() as temp_dir:
             system_prompt_path = Path(temp_dir) / "system.md"
             system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
-            with redirect_stdout(output), redirect_stderr(debug_output):
-                exit_code = main(
-                    [
-                        "chat",
-                        "--provider",
-                        "mock",
-                        "--model",
-                        "mock-v1",
-                        "--message",
-                        "hello",
-                        "--system-prompt-file",
-                        str(system_prompt_path),
-                        "--debug",
-                    ]
-                )
+            with patch("jean_claude.cli._build_llm_client", return_value=client):
+                with redirect_stdout(output), redirect_stderr(debug_output):
+                    exit_code = main(
+                        [
+                            "chat",
+                            "--model",
+                            "gpt-5.3-codex",
+                            "--message",
+                            "hello",
+                            "--system-prompt-file",
+                            str(system_prompt_path),
+                            "--debug",
+                        ]
+                    )
         self.assertEqual(exit_code, 0)
+        self.assertIn("[debug] llm.complete.request", debug_output.getvalue())
+        self.assertIn("[debug] llm.complete.response", debug_output.getvalue())
         self.assertIn("# Prompt", debug_output.getvalue())
         self.assertIn("# Latest User Message", debug_output.getvalue())
 
     def test_cli_chat_one_shot_expands_markdown_references_in_debug_prompt(self) -> None:
         output = io.StringIO()
         debug_output = io.StringIO()
+        client = RecordingLLMClient(response="done")
         with TemporaryDirectory() as temp_dir:
             base_path = Path(temp_dir)
             system_prompt_path = base_path / "system.md"
@@ -141,21 +148,20 @@ class CLITestCase(unittest.TestCase):
             system_prompt_path.write_text("# Prompt\n\nBe helpful.", encoding="utf-8")
             notes_path.write_text("# Notes\n\nShip the release.", encoding="utf-8")
             with patch("jean_claude.chat.session.Path.cwd", return_value=base_path):
-                with redirect_stdout(output), redirect_stderr(debug_output):
-                    exit_code = main(
-                        [
-                            "chat",
-                            "--provider",
-                            "mock",
-                            "--model",
-                            "mock-v1",
-                            "--message",
-                            "Summarize @notes.md",
-                            "--system-prompt-file",
-                            str(system_prompt_path),
-                            "--debug",
-                        ]
-                    )
+                with patch("jean_claude.cli._build_llm_client", return_value=client):
+                    with redirect_stdout(output), redirect_stderr(debug_output):
+                        exit_code = main(
+                            [
+                                "chat",
+                                "--model",
+                                "gpt-5.3-codex",
+                                "--message",
+                                "Summarize @notes.md",
+                                "--system-prompt-file",
+                                str(system_prompt_path),
+                                "--debug",
+                            ]
+                        )
         self.assertEqual(exit_code, 0)
         self.assertIn("[Included markdown file: notes.md]", debug_output.getvalue())
         self.assertIn("# Notes\n\nShip the release.", debug_output.getvalue())

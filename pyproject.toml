@@ -5,12 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jean-claude"
 version = "0.1.0"
-description = "Starter CLI for a configurable LLM chat assistant"
+description = "Simple CLI for chatting with OpenAI Codex"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-  "PyYAML>=6.0",
-]
 
 [project.scripts]
 jc = "jean_claude.cli:main"

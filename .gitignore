@@ -9,3 +9,4 @@ __pycache__/
 # Local environment and state
 .env
 *.local
+build

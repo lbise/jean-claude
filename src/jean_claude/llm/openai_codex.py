@@ -9,9 +9,9 @@ from urllib.request import Request, urlopen
 
 from jean_claude.auth.openai_codex_oauth import refresh_openai_codex_token
 from jean_claude.auth.store import AuthStore, OpenAICodexCredentials
+from jean_claude.config import default_system_prompt_path
 from jean_claude.errors import AuthError, AuthExpiredError, LLMError, RetryableLLMError
 from jean_claude.llm.base import DebugHook, LLMResult
-from jean_claude.prompts import default_base_instructions
 
 
 DEFAULT_MODEL = "gpt-5.3-codex"
@@ -359,9 +359,10 @@ class OpenAICodexClient:
         if isinstance(system_prompt, str) and system_prompt.strip():
             return system_prompt.strip()
         try:
-            return default_base_instructions()
-        except Exception:
+            text = default_system_prompt_path().read_text(encoding="utf-8").strip()
+        except OSError:
             return DEFAULT_INSTRUCTIONS
+        return text or DEFAULT_INSTRUCTIONS
 
 
 def _emit_debug(debug_hook: DebugHook | None, payload: dict[str, Any]) -> None:

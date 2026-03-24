@@ -18,10 +18,6 @@ def auth_file_path() -> Path:
     return state_dir() / "auth.json"
 
 
-def prefs_file_path() -> Path:
-    return state_dir() / "prefs.json"
-
-
 def default_system_prompt_path() -> Path:
     return prompts_dir() / "system.md"
 

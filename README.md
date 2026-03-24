@@ -1,14 +1,13 @@
 # Jean-Claude
 
-Jean-Claude is a starter CLI for a simple LLM chat workflow.
+Jean-Claude is a small CLI for chatting with OpenAI Codex.
 
 Current focus:
 
 - OpenAI Codex OAuth login for ChatGPT subscription access
 - interactive chat with rolling history
 - system prompts loaded from a Markdown file and sent in full on every turn
-- mock LLM provider for offline development
-- simple one-shot LLM test command
+- Markdown file inclusion with `@file.md`
 
 ## Quickstart
 
@@ -41,20 +40,13 @@ $EDITOR prompts/system.md
 4. Start chatting:
 
 ```bash
-jc chat --provider openai-codex --model gpt-5.3-codex
+jc chat
 ```
 
 You can also point chat at a different Markdown file:
 
 ```bash
-jc chat --provider openai-codex --model gpt-5.3-codex --system-prompt-file prompts/system.md
-```
-
-5. Run against the mock provider when you do not want network access:
-
-```bash
-jc chat --provider mock --message "Help me draft a release note"
-jc chat --provider mock --message "Summarize @README.md"
+jc chat --system-prompt-file prompts/system.md
 ```
 
 ## Chat Behavior
@@ -78,18 +70,10 @@ jc auth logout openai-codex
 ### Chat
 
 ```bash
-jc chat --provider openai-codex --model gpt-5.3-codex
-jc chat --provider mock --message "Summarize this idea"
-jc chat --provider openai-codex --system-prompt-file prompts/system.md
-jc chat --provider openai-codex --debug
-```
-
-### LLM Test
-
-```bash
-jc llm test --provider openai-codex --model gpt-5.3-codex --prompt "Say hello"
-jc llm test --provider mock --prompt "Give me a tagline"
-jc llm test --provider openai-codex --prompt "Say hello" --debug
+jc chat
+jc chat --message "Summarize this idea"
+jc chat --system-prompt-file prompts/system.md
+jc chat --debug
 ```
 
 ## Storage
@@ -102,6 +86,6 @@ You can override the state directory with:
 
 - `JEAN_CLAUDE_STATE_DIR`
 
-You can override the prompt-pack directory with:
+You can override the prompts directory with:
 
 - `JEAN_CLAUDE_PROMPTS_DIR`
